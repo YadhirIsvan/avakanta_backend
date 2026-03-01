@@ -109,3 +109,31 @@ class LogoutView(APIView):
                 status=status.HTTP_400_BAD_REQUEST
             )
         return Response({'message': 'Sesión cerrada'})
+
+
+class GoogleLoginView(APIView):
+    """
+    Login con Google Identity (stub — pendiente de implementación).
+    Request: { "idToken": "eyJ..." }
+    """
+    permission_classes = [AllowAny]
+
+    def post(self, request):
+        return Response(
+            {'error': 'Not implemented yet'},
+            status=status.HTTP_501_NOT_IMPLEMENTED
+        )
+
+
+class AppleLoginView(APIView):
+    """
+    Login con Apple Sign In (stub — pendiente de implementación).
+    Request: { "identityToken": "eyJ..." }
+    """
+    permission_classes = [AllowAny]
+
+    def post(self, request):
+        return Response(
+            {'error': 'Not implemented yet'},
+            status=status.HTTP_501_NOT_IMPLEMENTED
+        )

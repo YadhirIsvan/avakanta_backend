@@ -374,7 +374,7 @@
 
 ---
 
-### T-023 — Implementar stubs POST /auth/google y POST /auth/apple
+### [x] T-023 — Implementar stubs POST /auth/google y POST /auth/apple
 
 **Descripción:** Crear los endpoints para Google y Apple Sign In con la firma correcta pero retornando `{"error": "Not implemented yet"}` con status 501. Esto mantiene la spec completa sin bloquear el desarrollo del resto.
 
