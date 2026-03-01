@@ -746,7 +746,7 @@
 
 ---
 
-### T-046 — Serializers admin para Agents
+### [x] T-046 — Serializers admin para Agents
 
 **Descripción:** Crear `AdminAgentListSerializer` (con stats computados: properties_count, sales_count, leads_count, active_leads), `AdminAgentDetailSerializer` (con horarios), `AdminAgentCreateSerializer`.
 
@@ -760,7 +760,7 @@
 
 ---
 
-### T-047 — Implementar GET y POST /admin/agents
+### [x] T-047 — Implementar GET y POST /admin/agents
 
 **Descripción:** Listado de agentes del tenant y creación de agente nuevo. Al crear: si el usuario ya existe por email, crear solo `TenantMembership`; si no existe, crear `User` + `TenantMembership` + `AgentProfile`.
 
@@ -776,7 +776,7 @@
 
 ---
 
-### T-048 — Implementar GET, PATCH, DELETE /admin/agents/{id}
+### [x] T-048 — Implementar GET, PATCH, DELETE /admin/agents/{id}
 
 **Descripción:** Detalle del agente con stats, actualización de zona/bio/score, y desactivación (`is_active=False` en la membresía).
 
@@ -791,7 +791,7 @@
 
 ---
 
-### T-049 — Implementar CRUD de horarios (/admin/agents/{id}/schedules)
+### [x] T-049 — Implementar CRUD de horarios (/admin/agents/{id}/schedules)
 
 **Descripción:** Listado, creación, actualización y eliminación de `AgentSchedule` con sus `ScheduleBreak` anidados. Al crear/actualizar un horario, los breaks se crean/reemplazan en la misma operación.
 
@@ -808,7 +808,7 @@
 
 ---
 
-### T-050 — Implementar CRUD de indisponibilidades (/admin/agents/{id}/unavailabilities)
+### [x] T-050 — Implementar CRUD de indisponibilidades (/admin/agents/{id}/unavailabilities)
 
 **Descripción:** Listado, creación y eliminación de períodos de indisponibilidad del agente.
 
