@@ -2,10 +2,11 @@ from django.core.mail import send_mail
 from django.conf import settings
 from rest_framework.views import APIView
 from rest_framework.response import Response
-from rest_framework.permissions import AllowAny
+from rest_framework.permissions import AllowAny, IsAuthenticated
 from rest_framework import status
 
 from rest_framework_simplejwt.tokens import RefreshToken
+from rest_framework_simplejwt.exceptions import TokenError
 
 from ..models import User, TenantMembership
 from ..serializers.auth import OTPRequestSerializer, OTPVerifySerializer, MembershipSerializer
@@ -87,3 +88,24 @@ class OTPVerifyView(APIView):
                 'memberships': MembershipSerializer(memberships, many=True).data,
             }
         })
+
+
+class LogoutView(APIView):
+    permission_classes = [IsAuthenticated]
+
+    def post(self, request):
+        refresh_token = request.data.get('refresh')
+        if not refresh_token:
+            return Response(
+                {'error': 'El campo refresh es requerido.'},
+                status=status.HTTP_400_BAD_REQUEST
+            )
+        try:
+            token = RefreshToken(refresh_token)
+            token.blacklist()
+        except TokenError:
+            return Response(
+                {'error': 'Token inválido o ya fue revocado.'},
+                status=status.HTTP_400_BAD_REQUEST
+            )
+        return Response({'message': 'Sesión cerrada'})

@@ -358,7 +358,7 @@
 
 ---
 
-### T-022 — Implementar POST /auth/refresh y POST /auth/logout
+### [x] T-022 — Implementar POST /auth/refresh y POST /auth/logout
 
 **Descripción:** Endpoint `/auth/refresh` usando `TokenRefreshView` de simplejwt. Endpoint `/auth/logout` que blacklistea el refresh token (requerir `TOKEN_BLACKLIST` en `INSTALLED_APPS`).
 
