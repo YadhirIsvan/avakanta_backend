@@ -1,0 +1,59 @@
+[
+  {
+    "model": "locations.country",
+    "pk": 1,
+    "fields": {
+      "name": "México",
+      "code": "MX"
+    }
+  },
+  {
+    "model": "locations.state",
+    "pk": 1,
+    "fields": {
+      "name": "Veracruz",
+      "country": 1,
+      "code": "VER"
+    }
+  },
+  {
+    "model": "locations.city",
+    "pk": 1,
+    "fields": {
+      "name": "Orizaba",
+      "state": 1
+    }
+  },
+  {
+    "model": "locations.city",
+    "pk": 2,
+    "fields": {
+      "name": "Córdoba",
+      "state": 1
+    }
+  },
+  {
+    "model": "locations.city",
+    "pk": 3,
+    "fields": {
+      "name": "Fortín",
+      "state": 1
+    }
+  },
+  {
+    "model": "locations.city",
+    "pk": 4,
+    "fields": {
+      "name": "Huatusco",
+      "state": 1
+    }
+  },
+  {
+    "model": "locations.city",
+    "pk": 5,
+    "fields": {
+      "name": "Tehuacán",
+      "state": 1
+    }
+  }
+]

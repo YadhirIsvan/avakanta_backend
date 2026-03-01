@@ -215,7 +215,7 @@
 
 ---
 
-### T-014 — Migrations y fixtures iniciales de Locations
+### [x] T-014 — Migrations y fixtures iniciales de Locations
 
 **Descripción:** Crear y aplicar migraciones. Crear fixture con datos iniciales: México → Veracruz → ciudades de las Altas Montañas (Orizaba, Córdoba, Fortín, Huatusco, Tehuacán).
 
