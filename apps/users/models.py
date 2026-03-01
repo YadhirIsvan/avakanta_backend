@@ -113,3 +113,19 @@ class UserNotificationPreferences(models.Model):
 
     def __str__(self):
         return f'NotifPrefs({self.membership})'
+
+
+class OTPCode(models.Model):
+    email = models.EmailField(db_index=True)
+    code_hash = models.CharField(max_length=255)
+    created_at = models.DateTimeField(auto_now_add=True)
+    expires_at = models.DateTimeField()
+    is_used = models.BooleanField(default=False)
+
+    class Meta:
+        db_table = 'otp_codes'
+        verbose_name = 'OTP Code'
+        verbose_name_plural = 'OTP Codes'
+
+    def __str__(self):
+        return f'OTP({self.email}, expires={self.expires_at})'
