@@ -341,7 +341,7 @@
 
 ---
 
-### T-021 — Implementar POST /auth/email/verify
+### [x] T-021 — Implementar POST /auth/email/verify
 
 **Descripción:** Endpoint que recibe `email` + `token`, valida el OTP contra el hash, elimina el OTP, y retorna JWT (access + refresh) + datos del usuario con sus membresías activas.
 
