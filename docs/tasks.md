@@ -407,7 +407,7 @@
 
 ---
 
-### T-025 — Crear modelos principales de Properties
+### [x] T-025 — Crear modelos principales de Properties
 
 **Descripción:** Crear `Property` con todos los campos del schema (incluyendo enums `listing_type`, `property_type`, `property_condition`). Crear `PropertyImage`, `PropertyAmenity` (M2M), `PropertyDocument`, `PropertyNearbyPlace`, `PropertyAssignment`.
 
