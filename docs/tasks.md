@@ -647,7 +647,7 @@
 
 ---
 
-### T-040 — Crear modelo Notification
+### [x] T-040 — Crear modelo Notification
 
 **Descripción:** Crear `Notification` con todos los campos del schema: `tenant_id`, `membership_id`, `title`, `message`, `notification_type`, `is_read`, `reference_type`, `reference_id`.
 
