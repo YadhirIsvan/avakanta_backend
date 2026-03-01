@@ -19,6 +19,7 @@ urlpatterns = [
     path('api/v1/admin/', include('apps.properties.urls.admin')),
     path('api/v1/admin/', include('apps.users.urls.admin')),
     path('api/v1/admin/', include('apps.appointments.urls.admin')),
+    path('api/v1/admin/', include('apps.transactions.urls.admin')),
 
     # Catálogos globales (público)
     path('api/v1/catalogs/', include('apps.locations.urls')),

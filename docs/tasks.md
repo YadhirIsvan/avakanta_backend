@@ -915,7 +915,7 @@
 
 ---
 
-### T-056 — Implementar GET y POST /admin/purchase-processes
+### [x] T-056 — Implementar GET y POST /admin/purchase-processes
 
 **Descripción:** Listado de procesos de compra (para el Kanban) con filtro por `status` y `agent_id`. Creación manual de proceso de compra con `status=lead`.
 
@@ -931,7 +931,7 @@
 
 ---
 
-### T-057 — Implementar PATCH /admin/purchase-processes/{id}/status
+### [x] T-057 — Implementar PATCH /admin/purchase-processes/{id}/status
 
 **Descripción:** Mover proceso a otra etapa del Kanban. Calcula `overall_progress` según la etapa. Registra el cambio en `ProcessStatusHistory`. Si `status=cerrado`, requerir `sale_price` y `payment_method`.
 
@@ -953,7 +953,7 @@ avaluo=44%, credito=56%, docs_finales=67%, escrituras=78%, cerrado=100%
 
 ---
 
-### T-058 — Implementar PATCH /admin/purchase-processes/{id}
+### [x] T-058 — Implementar PATCH /admin/purchase-processes/{id}
 
 **Descripción:** Actualización general del proceso (cambiar agente, notas, datos de cierre).
 
@@ -970,7 +970,7 @@ avaluo=44%, credito=56%, docs_finales=67%, escrituras=78%, cerrado=100%
 
 ---
 
-### T-059 — Implementar GET y POST /admin/sale-processes
+### [x] T-059 — Implementar GET y POST /admin/sale-processes
 
 **Descripción:** Listado de procesos de venta con filtros. Creación con `status=contacto_inicial`.
 
@@ -984,7 +984,7 @@ avaluo=44%, credito=56%, docs_finales=67%, escrituras=78%, cerrado=100%
 
 ---
 
-### T-060 — Implementar PATCH /admin/sale-processes/{id}/status
+### [x] T-060 — Implementar PATCH /admin/sale-processes/{id}/status
 
 **Descripción:** Mover proceso de venta a otra etapa. Registrar en `ProcessStatusHistory`. Si `status=publicacion`, actualizar `property.listing_type=sale` y `property.status=disponible` en operación atómica.
 
