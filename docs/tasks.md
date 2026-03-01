@@ -519,7 +519,7 @@
 
 ---
 
-### T-032 — Implementar AvailabilityService
+### [x] T-032 — Implementar AvailabilityService
 
 **Descripción:** Crear `apps/appointments/services.py` con la clase `AvailabilityService`. Métodos: `get_active_schedule_for_day(agent_membership_id, date)`, `check_unavailability(agent_membership_id, date)`, `get_existing_appointments(agent_membership_id, date)`, `get_available_slots(property_id, date)`. Lógica de la spec sección 9.4.
 
