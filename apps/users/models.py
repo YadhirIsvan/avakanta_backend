@@ -71,3 +71,45 @@ class TenantMembership(models.Model):
 
     def __str__(self):
         return f'{self.user.email} — {self.tenant.name} ({self.role})'
+
+
+class AgentProfile(models.Model):
+    membership = models.OneToOneField(
+        TenantMembership,
+        on_delete=models.CASCADE,
+        related_name='agent_profile'
+    )
+    zone = models.CharField(max_length=150, blank=True, null=True)
+    bio = models.TextField(blank=True, null=True)
+    score = models.DecimalField(max_digits=3, decimal_places=2, default=0)
+    created_at = models.DateTimeField(auto_now_add=True)
+    updated_at = models.DateTimeField(auto_now=True)
+
+    class Meta:
+        db_table = 'agent_profiles'
+        verbose_name = 'Agent Profile'
+        verbose_name_plural = 'Agent Profiles'
+
+    def __str__(self):
+        return f'AgentProfile({self.membership})'
+
+
+class UserNotificationPreferences(models.Model):
+    membership = models.OneToOneField(
+        TenantMembership,
+        on_delete=models.CASCADE,
+        related_name='notification_preferences'
+    )
+    new_properties = models.BooleanField(default=True)
+    price_updates = models.BooleanField(default=True)
+    appointment_reminders = models.BooleanField(default=True)
+    offers = models.BooleanField(default=True)
+    updated_at = models.DateTimeField(auto_now=True)
+
+    class Meta:
+        db_table = 'user_notification_preferences'
+        verbose_name = 'User Notification Preferences'
+        verbose_name_plural = 'User Notification Preferences'
+
+    def __str__(self):
+        return f'NotifPrefs({self.membership})'

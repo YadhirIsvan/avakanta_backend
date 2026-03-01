@@ -291,7 +291,7 @@
 
 ---
 
-### T-018 — Crear modelo TenantMembership y AgentProfile
+### [x] T-018 — Crear modelo TenantMembership y AgentProfile
 
 **Descripción:** Crear `TenantMembership` (user + tenant + role + is_active) con índice único `(user_id, tenant_id)`. Crear `AgentProfile` (membership_id + zone + bio + score) como extensión 1:1 de membresía de agente. Crear `UserNotificationPreferences`.
 
