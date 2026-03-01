@@ -10,6 +10,9 @@ urlpatterns = [
     # Auth
     path('api/v1/auth/', include('apps.users.urls.auth')),
 
+    # Público
+    path('api/v1/public/', include('apps.properties.urls.public')),
+
     # Catálogos globales (público)
     path('api/v1/catalogs/', include('apps.locations.urls')),
 
