@@ -488,7 +488,7 @@
 
 ---
 
-### T-030 — Crear modelos de Appointments
+### [x] T-030 — Crear modelos de Appointments
 
 **Descripción:** Crear `AppointmentSettings`, `AgentSchedule`, `ScheduleBreak`, `AgentUnavailability`, `Appointment` con todos los campos del schema y enums correspondientes.
 
@@ -505,7 +505,7 @@
 
 ---
 
-### T-031 — Migrations de Appointments y fixture de configuración
+### [x] T-031 — Migrations de Appointments y fixture de configuración
 
 **Descripción:** Crear y aplicar migraciones. Crear fixture con `AppointmentSettings` para Altas Montañas (slot_duration=60, max_advance=30, min_advance=24, day_start=09:00, day_end=18:00).
 
