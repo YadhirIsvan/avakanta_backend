@@ -681,7 +681,7 @@
 
 ---
 
-### T-042 — Implementar GET y POST /admin/properties
+### [x] T-042 — Implementar GET y POST /admin/properties
 
 **Descripción:** Lista y creación de propiedades para el admin. Filtros: `search`, `status`, `listing_type`, `property_type`, `agent_id`. Solo propiedades del tenant del admin. Usar `TenantQuerySetMixin`.
 

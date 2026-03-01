@@ -2,6 +2,19 @@ from django.http import JsonResponse
 from apps.tenants.models import Tenant
 from apps.users.models import TenantMembership
 
+
+def _authenticate_jwt(request):
+    """Intenta autenticar el request con JWT si el usuario no está autenticado."""
+    if request.user and request.user.is_authenticated:
+        return
+    try:
+        from rest_framework_simplejwt.authentication import JWTAuthentication
+        result = JWTAuthentication().authenticate(request)
+        if result:
+            request.user, _ = result
+    except Exception:
+        pass
+
 PUBLIC_PATHS = [
     '/api/v1/auth/',
     '/api/v1/public/',
@@ -29,6 +42,8 @@ class TenantMiddleware:
 
         if self._is_public_path(request.path):
             return self.get_response(request)
+
+        _authenticate_jwt(request)
 
         if request.user and request.user.is_authenticated:
             tenant = self._resolve_tenant(request)
