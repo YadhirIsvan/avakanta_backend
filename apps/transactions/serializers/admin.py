@@ -182,3 +182,30 @@ class AdminSellerLeadUpdateSerializer(serializers.Serializer):
 class AdminSellerLeadConvertSerializer(serializers.Serializer):
     agent_membership_id = serializers.IntegerField()
     notes = serializers.CharField(required=False, allow_blank=True, default='')
+
+
+# ── History ───────────────────────────────────────────────────────────────────
+
+class AdminHistorySerializer(serializers.ModelSerializer):
+    property = serializers.SerializerMethodField()
+    client = serializers.SerializerMethodField()
+    agent = serializers.SerializerMethodField()
+
+    class Meta:
+        model = PurchaseProcess
+        fields = ['id', 'property', 'client', 'agent', 'sale_price', 'payment_method', 'closed_at']
+
+    def get_property(self, obj):
+        return {
+            'title': obj.property.title,
+            'property_type': obj.property.property_type,
+            'zone': obj.property.zone,
+        }
+
+    def get_client(self, obj):
+        user = obj.client_membership.user
+        return {'name': user.get_full_name() or user.email}
+
+    def get_agent(self, obj):
+        user = obj.agent_membership.user
+        return {'name': user.get_full_name() or user.email}

@@ -1039,7 +1039,7 @@ avaluo=44%, credito=56%, docs_finales=67%, escrituras=78%, cerrado=100%
 
 ---
 
-### T-063 — Implementar GET /admin/history
+### [x] T-063 — Implementar GET /admin/history
 
 **Descripción:** Listado de ventas completadas (`purchase_processes` con `status=cerrado`). Filtros: `zone`, `property_type`, `payment_method`, `search`, `date_from`, `date_to`. Paginado.
 
@@ -1054,7 +1054,7 @@ avaluo=44%, credito=56%, docs_finales=67%, escrituras=78%, cerrado=100%
 
 ---
 
-### T-064 — Implementar GET /admin/insights
+### [x] T-064 — Implementar GET /admin/insights
 
 **Descripción:** Analytics del tenant. Calcular con queries de agregación: `sales_by_month`, `distribution_by_type`, `activity_by_zone`, `top_agents`, `summary`. Filtrar por `period` (month, quarter, year, all).
 
@@ -1074,7 +1074,7 @@ avaluo=44%, credito=56%, docs_finales=67%, escrituras=78%, cerrado=100%
 
 ---
 
-### T-065 — Implementar GET /agent/dashboard
+### [x] T-065 — Implementar GET /agent/dashboard
 
 **Descripción:** Stats del agente autenticado: `active_leads` (purchase_processes activos), `today_appointments` (citas del día), `month_sales` (cerrado en el mes).
 
@@ -1089,7 +1089,7 @@ avaluo=44%, credito=56%, docs_finales=67%, escrituras=78%, cerrado=100%
 
 ---
 
-### T-066 — Implementar GET /agent/properties y /agent/properties/{id}/leads
+### [x] T-066 — Implementar GET /agent/properties y /agent/properties/{id}/leads
 
 **Descripción:** Propiedades asignadas al agente con `leads_count`. Leads (purchase_processes) de una propiedad específica.
 
@@ -1104,7 +1104,7 @@ avaluo=44%, credito=56%, docs_finales=67%, escrituras=78%, cerrado=100%
 
 ---
 
-### T-067 — Implementar GET /agent/appointments y PATCH /agent/appointments/{id}/status
+### [x] T-067 — Implementar GET /agent/appointments y PATCH /agent/appointments/{id}/status
 
 **Descripción:** Citas del agente con filtros. Actualización de estado con validación de transiciones válidas (programada → confirmada → en_progreso → completada | cancelada | no_show | reagendada).
 
@@ -1123,7 +1123,7 @@ avaluo=44%, credito=56%, docs_finales=67%, escrituras=78%, cerrado=100%
 
 ---
 
-### T-068 — Implementar GET /client/dashboard
+### [x] T-068 — Implementar GET /client/dashboard
 
 **Descripción:** Resumen del cliente con actividad reciente, preview de ventas y compras.
 
@@ -1139,7 +1139,7 @@ avaluo=44%, credito=56%, docs_finales=67%, escrituras=78%, cerrado=100%
 
 ---
 
-### T-069 — Implementar GET /client/sales y GET /client/sales/{process_id}
+### [x] T-069 — Implementar GET /client/sales y GET /client/sales/{process_id}
 
 **Descripción:** Procesos de venta del cliente con stats globales (vistas totales, interesados, valor). Detalle con timeline de etapas completo e historial de cambios.
 
@@ -1155,7 +1155,7 @@ avaluo=44%, credito=56%, docs_finales=67%, escrituras=78%, cerrado=100%
 
 ---
 
-### T-070 — Implementar GET /client/purchases y GET /client/purchases/{process_id}
+### [x] T-070 — Implementar GET /client/purchases y GET /client/purchases/{process_id}
 
 **Descripción:** Procesos de compra del cliente. Detalle con `steps` (timeline de 9 etapas con `allow_upload`) y documentos subidos.
 
@@ -1170,7 +1170,7 @@ avaluo=44%, credito=56%, docs_finales=67%, escrituras=78%, cerrado=100%
 
 ---
 
-### T-071 — Implementar POST /client/purchases/{process_id}/documents
+### [x] T-071 — Implementar POST /client/purchases/{process_id}/documents
 
 **Descripción:** Subida de documento por el cliente en etapas permitidas (`allow_upload=True`). Valida que la etapa actual del proceso permita carga antes de aceptar el archivo.
 
@@ -1185,7 +1185,7 @@ avaluo=44%, credito=56%, docs_finales=67%, escrituras=78%, cerrado=100%
 
 ---
 
-### T-072 — Implementar GET y PATCH /client/profile
+### [x] T-072 — Implementar GET y PATCH /client/profile
 
 **Descripción:** Ver y editar perfil del cliente (first_name, last_name, phone, city). El email NO es editable.
 
@@ -1200,7 +1200,7 @@ avaluo=44%, credito=56%, docs_finales=67%, escrituras=78%, cerrado=100%
 
 ---
 
-### T-073 — Implementar GET y PUT /client/notification-preferences
+### [x] T-073 — Implementar GET y PUT /client/notification-preferences
 
 **Descripción:** Leer y actualizar las preferencias de notificación del cliente. Crear el registro si no existe (usar `get_or_create`).
 
@@ -1219,7 +1219,7 @@ avaluo=44%, credito=56%, docs_finales=67%, escrituras=78%, cerrado=100%
 
 ---
 
-### T-074 — Implementar endpoints de notificaciones
+### [x] T-074 — Implementar endpoints de notificaciones
 
 **Descripción:** Endpoints compartidos entre roles: `GET /notifications` (con `is_read` filter y `unread_count`), `PATCH /notifications/{id}/read`, `POST /notifications/read-all`. Solo el dueño de la notificación puede verla/actualizarla.
 
@@ -1240,7 +1240,7 @@ avaluo=44%, credito=56%, docs_finales=67%, escrituras=78%, cerrado=100%
 
 ---
 
-### T-075 — Tests de autenticación
+### [x] T-075 — Tests de autenticación
 
 **Descripción:** Suite de tests para el flujo completo de OTP: envío, verificación correcta, verificación incorrecta, expiración, rate limit. Tests de refresh y logout.
 
@@ -1257,7 +1257,7 @@ avaluo=44%, credito=56%, docs_finales=67%, escrituras=78%, cerrado=100%
 
 ---
 
-### T-076 — Tests de aislamiento multi-tenant
+### [x] T-076 — Tests de aislamiento multi-tenant
 
 **Descripción:** Tests que verifican que ningún usuario puede acceder a datos de otro tenant. Crear 2 tenants, 2 admins, y verificar que cada uno solo ve sus datos.
 
@@ -1271,7 +1271,7 @@ avaluo=44%, credito=56%, docs_finales=67%, escrituras=78%, cerrado=100%
 
 ---
 
-### T-077 — Tests de endpoints públicos
+### [x] T-077 — Tests de endpoints públicos
 
 **Descripción:** Tests para `GET /public/properties`, `GET /public/properties/{id}`, slots de disponibilidad, agendado de citas, seller leads.
 
@@ -1289,7 +1289,7 @@ avaluo=44%, credito=56%, docs_finales=67%, escrituras=78%, cerrado=100%
 
 ---
 
-### T-078 — Tests de la matriz de permisos
+### [x] T-078 — Tests de la matriz de permisos
 
 **Descripción:** Tests que verifican que cada endpoint rechaza los roles incorrectos con 403 y acepta los correctos.
 
@@ -1304,7 +1304,7 @@ avaluo=44%, credito=56%, docs_finales=67%, escrituras=78%, cerrado=100%
 
 ---
 
-### T-079 — Tests del AvailabilityService
+### [x] T-079 — Tests del AvailabilityService
 
 **Descripción:** Tests unitarios del servicio de disponibilidad. Cubrir todos los casos: sin horario, break, indisponibilidad, cita existente, hora pasada, `min_advance_hours`.
 
@@ -1320,7 +1320,7 @@ avaluo=44%, credito=56%, docs_finales=67%, escrituras=78%, cerrado=100%
 
 ---
 
-### T-080 — Tests del pipeline de compra
+### [x] T-080 — Tests del pipeline de compra
 
 **Descripción:** Tests de cambio de estado en el Kanban: progreso correcto, registro en historial, validaciones al cerrar.
 
@@ -1335,7 +1335,7 @@ avaluo=44%, credito=56%, docs_finales=67%, escrituras=78%, cerrado=100%
 
 ---
 
-### T-081 — Tests del pipeline de venta y seller leads
+### [x] T-081 — Tests del pipeline de venta y seller leads
 
 **Descripción:** Tests de conversión de seller lead, pipeline de venta, y el side effect de pasar a `publicacion`.
 
@@ -1349,7 +1349,7 @@ avaluo=44%, credito=56%, docs_finales=67%, escrituras=78%, cerrado=100%
 
 ---
 
-### T-082 — Tests del panel del agente
+### [x] T-082 — Tests del panel del agente
 
 **Descripción:** Tests de los endpoints del agente: solo ve sus propiedades asignadas, solo puede actualizar sus citas, transiciones válidas e inválidas.
 
@@ -1364,7 +1364,7 @@ avaluo=44%, credito=56%, docs_finales=67%, escrituras=78%, cerrado=100%
 
 ---
 
-### T-083 — Tests del panel del cliente
+### [x] T-083 — Tests del panel del cliente
 
 **Descripción:** Tests de subida de documentos en etapas correctas/incorrectas, actualización de perfil, preferencias de notificación.
 
@@ -1379,7 +1379,7 @@ avaluo=44%, credito=56%, docs_finales=67%, escrituras=78%, cerrado=100%
 
 ---
 
-### T-084 — Tests de notificaciones
+### [x] T-084 — Tests de notificaciones
 
 **Descripción:** Tests de visibilidad de notificaciones por usuario, marcado como leída, read-all.
 
@@ -1397,7 +1397,7 @@ avaluo=44%, credito=56%, docs_finales=67%, escrituras=78%, cerrado=100%
 
 ---
 
-### T-085 — Verificar tenant isolation en todos los ViewSets
+### [x] T-085 — Verificar tenant isolation en todos los ViewSets
 
 **Descripción:** Revisar que CADA ViewSet que maneja datos con `tenant_id` usa `TenantQuerySetMixin` o filtra explícitamente por `request.tenant`. Ningún endpoint debe poder retornar datos de otro tenant.
 
@@ -1410,7 +1410,7 @@ avaluo=44%, credito=56%, docs_finales=67%, escrituras=78%, cerrado=100%
 
 ---
 
-### T-086 — Verificar permission classes en todos los endpoints
+### [x] T-086 — Verificar permission classes en todos los endpoints
 
 **Descripción:** Revisar que cada endpoint tiene el decorador de permiso correcto según la matriz de spec sección 5.2. Ningún endpoint debe quedar con `AllowAny` excepto los marcados como públicos.
 
@@ -1423,7 +1423,7 @@ avaluo=44%, credito=56%, docs_finales=67%, escrituras=78%, cerrado=100%
 
 ---
 
-### T-087 — Verificar inputs de archivos (mime types y tamaño)
+### [x] T-087 — Verificar inputs de archivos (mime types y tamaño)
 
 **Descripción:** Todos los endpoints que aceptan archivos deben validar: mime types permitidos (imágenes: jpg/png/webp; documentos: pdf/jpg/png), tamaño máximo (imágenes: 10MB, documentos: 20MB). Rechazar con 400 si no cumple.
 
@@ -1438,7 +1438,7 @@ avaluo=44%, credito=56%, docs_finales=67%, escrituras=78%, cerrado=100%
 
 ---
 
-### T-088 — Verificar rate limiting en auth y endpoints sensibles
+### [x] T-088 — Verificar rate limiting en auth y endpoints sensibles
 
 **Descripción:** Confirmar que el rate limit de OTP (5 por hora) está activo y funcionando. Considerar añadir rate limiting a endpoints de creación públicos (`POST /public/seller-leads`).
 
@@ -1452,7 +1452,7 @@ avaluo=44%, credito=56%, docs_finales=67%, escrituras=78%, cerrado=100%
 
 ---
 
-### T-089 — Revisión final y checklist de seguridad
+### [x] T-089 — Revisión final y checklist de seguridad
 
 **Descripción:** Revisión general siguiendo el checklist de OWASP Top 10: SQL injection (ORM previene, verificar raw queries si hay), XSS (DRF serializa correctamente), IDOR (verificar que IDs de otros tenants dan 404, no 403), sensitive data exposure (tokens JWT no en logs), CORS configurado correctamente.
 

@@ -21,10 +21,14 @@ from ..serializers.admin import (
     AdminSellerLeadUpdateSerializer,
     AdminSellerLeadConvertSerializer,
 )
+from ..serializers.admin import (
+    AdminHistorySerializer,
+)
 from ..services import (
     update_purchase_process_status,
     update_sale_process_status,
     convert_seller_lead,
+    get_insights,
 )
 
 
@@ -389,3 +393,66 @@ class AdminSellerLeadConvertView(APIView):
             'sale_process_id': sale_process.pk,
             'message': 'Lead convertido. Se creó la propiedad y el proceso de venta.',
         }, status=201)
+
+
+# ── History ───────────────────────────────────────────────────────────────────
+
+class AdminHistoryView(APIView):
+    permission_classes = [IsAuthenticated, IsAdmin]
+    pagination_class = StandardPagination
+
+    def get(self, request):
+        qs = (
+            PurchaseProcess.objects
+            .filter(tenant=request.tenant, status='cerrado')
+            .select_related(
+                'property',
+                'client_membership__user',
+                'agent_membership__user',
+            )
+            .order_by('-closed_at')
+        )
+
+        zone = request.query_params.get('zone')
+        if zone:
+            qs = qs.filter(property__zone=zone)
+
+        property_type = request.query_params.get('property_type')
+        if property_type:
+            qs = qs.filter(property__property_type=property_type)
+
+        payment_method = request.query_params.get('payment_method')
+        if payment_method:
+            qs = qs.filter(payment_method__icontains=payment_method)
+
+        search = request.query_params.get('search')
+        if search:
+            qs = qs.filter(
+                Q(property__title__icontains=search) |
+                Q(client_membership__user__first_name__icontains=search) |
+                Q(client_membership__user__last_name__icontains=search)
+            )
+
+        date_from = request.query_params.get('date_from')
+        if date_from:
+            qs = qs.filter(closed_at__date__gte=date_from)
+
+        date_to = request.query_params.get('date_to')
+        if date_to:
+            qs = qs.filter(closed_at__date__lte=date_to)
+
+        paginator = self.pagination_class()
+        page = paginator.paginate_queryset(qs, request)
+        return paginator.get_paginated_response(
+            AdminHistorySerializer(page, many=True).data
+        )
+
+
+class AdminInsightsView(APIView):
+    permission_classes = [IsAuthenticated, IsAdmin]
+
+    def get(self, request):
+        period = request.query_params.get('period', 'month')
+        if period not in ('month', 'quarter', 'year', 'all'):
+            period = 'month'
+        return Response(get_insights(request.tenant, period))

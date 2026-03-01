@@ -21,6 +21,18 @@ urlpatterns = [
     path('api/v1/admin/', include('apps.appointments.urls.admin')),
     path('api/v1/admin/', include('apps.transactions.urls.admin')),
 
+    # Agent
+    path('api/v1/agent/', include('apps.users.urls.agent')),
+    path('api/v1/agent/', include('apps.properties.urls.agent')),
+    path('api/v1/agent/', include('apps.appointments.urls.agent')),
+
+    # Client
+    path('api/v1/client/', include('apps.users.urls.client')),
+    path('api/v1/client/', include('apps.transactions.urls.client')),
+
+    # Notificaciones (todos los roles autenticados)
+    path('api/v1/notifications/', include('apps.notifications.urls')),
+
     # Catálogos globales (público)
     path('api/v1/catalogs/', include('apps.locations.urls')),
 

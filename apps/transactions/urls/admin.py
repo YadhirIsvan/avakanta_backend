@@ -8,6 +8,8 @@ from ..views.admin import (
     AdminSellerLeadListView,
     AdminSellerLeadDetailView,
     AdminSellerLeadConvertView,
+    AdminHistoryView,
+    AdminInsightsView,
 )
 
 urlpatterns = [
@@ -22,4 +24,7 @@ urlpatterns = [
     path('seller-leads', AdminSellerLeadListView.as_view(), name='admin-seller-lead-list'),
     path('seller-leads/<int:pk>', AdminSellerLeadDetailView.as_view(), name='admin-seller-lead-detail'),
     path('seller-leads/<int:pk>/convert', AdminSellerLeadConvertView.as_view(), name='admin-seller-lead-convert'),
+    # History & Insights
+    path('history', AdminHistoryView.as_view(), name='admin-history'),
+    path('insights', AdminInsightsView.as_view(), name='admin-insights'),
 ]
