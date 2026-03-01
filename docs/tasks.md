@@ -534,7 +534,7 @@
 
 ---
 
-### T-033 — Implementar generación de matrícula CLI-YYYY-NNN
+### [x] T-033 — Implementar generación de matrícula CLI-YYYY-NNN
 
 **Descripción:** Función en `core/utils.py` que genera la siguiente matrícula disponible para un tenant. Formato: `CLI-{año}-{NNN}` donde NNN es el consecutivo del año (001, 002, ...). Debe ser thread-safe usando `select_for_update` o un enfoque atómico.
 

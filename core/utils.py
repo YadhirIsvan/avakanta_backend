@@ -1,20 +1,37 @@
 from datetime import date
 
+from django.db import transaction
+
 
 def generate_matricula(tenant_id):
     """
     Genera una matrícula de cita con formato CLI-{año}-{consecutivo}.
     El consecutivo es por tenant y por año (reinicia en 001 cada año).
+    Thread-safe: bloquea la fila del Tenant con SELECT FOR UPDATE para
+    serializar la generación concurrente de matrículas del mismo tenant.
     """
     from apps.appointments.models import Appointment
+    from apps.tenants.models import Tenant
 
-    year = date.today().year
-    count = Appointment.objects.filter(
-        tenant_id=tenant_id,
-        created_at__year=year
-    ).count()
-    consecutive = str(count + 1).zfill(3)
-    return f'CLI-{year}-{consecutive}'
+    with transaction.atomic():
+        # Bloquea la fila del tenant → serializa accesos concurrentes al mismo tenant
+        Tenant.objects.select_for_update().get(pk=tenant_id)
+
+        year = date.today().year
+        prefix = f'CLI-{year}-'
+        last = (
+            Appointment.objects
+            .filter(tenant_id=tenant_id, matricula__startswith=prefix)
+            .order_by('-matricula')
+            .values_list('matricula', flat=True)
+            .first()
+        )
+        if last:
+            next_num = int(last.split('-')[2]) + 1
+        else:
+            next_num = 1
+
+        return f'{prefix}{str(next_num).zfill(3)}'
 
 
 def calculate_trend(views_last_7, views_prev_7):
