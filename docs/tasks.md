@@ -424,7 +424,7 @@
 
 ---
 
-### T-026 — Migrations de Properties
+### [x] T-026 — Migrations de Properties
 
 **Descripción:** Crear y aplicar las migraciones de la app properties. Crear fixtures de datos de ejemplo (al menos 5 propiedades para desarrollo).
 
