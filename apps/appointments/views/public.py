@@ -1,9 +1,15 @@
 from datetime import date
 
+from django.db import transaction
 from rest_framework.permissions import AllowAny
 from rest_framework.response import Response
 from rest_framework.views import APIView
 
+from apps.properties.models import Property, PropertyAssignment
+from apps.appointments.models import Appointment, AppointmentSettings
+from apps.users.models import TenantMembership
+from core.utils import generate_matricula
+from ..serializers.public import CreateAppointmentSerializer
 from ..services import AvailabilityService
 
 
@@ -51,3 +57,98 @@ class AppointmentSlotsView(APIView):
             'available_slots': result['available_slots'],
             'slot_duration_minutes': result['slot_duration_minutes'],
         })
+
+
+class CreateAppointmentView(APIView):
+    permission_classes = [AllowAny]
+
+    def post(self, request, pk):
+        # 1. Obtener la propiedad
+        try:
+            prop = Property.objects.select_related('tenant').get(
+                pk=pk, is_active=True, listing_type='sale', status='disponible'
+            )
+        except Property.DoesNotExist:
+            return Response({'error': 'Propiedad no encontrada.'}, status=404)
+
+        # 2. Validar input
+        serializer = CreateAppointmentSerializer(
+            data=request.data, context={'request': request}
+        )
+        if not serializer.is_valid():
+            return Response(serializer.errors, status=400)
+
+        data = serializer.validated_data
+        target_date = data['date']
+        target_time = data['time']
+
+        # 3. Obtener agente visible
+        assignment = (
+            PropertyAssignment.objects
+            .filter(property=prop, is_visible=True)
+            .select_related('agent_membership__user')
+            .first()
+        )
+        if not assignment:
+            return Response(
+                {'error': 'La propiedad no tiene un agente asignado.'}, status=400
+            )
+
+        agent_membership = assignment.agent_membership
+        svc = AvailabilityService()
+
+        # 4. Validar disponibilidad del slot
+        availability = svc.get_available_slots(prop.pk, target_date)
+        time_str = target_time.strftime('%H:%M')
+        if time_str not in availability['available_slots']:
+            return Response(
+                {'error': 'El agente no tiene disponibilidad en ese horario.'}, status=400
+            )
+
+        # 5. Obtener slot_duration de los settings
+        try:
+            settings = AppointmentSettings.objects.get(tenant=prop.tenant)
+            slot_duration = settings.slot_duration_minutes
+        except AppointmentSettings.DoesNotExist:
+            slot_duration = 60
+
+        # 6. Determinar client_membership si el usuario está autenticado
+        client_membership = None
+        if request.user.is_authenticated:
+            client_membership = TenantMembership.objects.filter(
+                user=request.user, tenant=prop.tenant, is_active=True
+            ).first()
+
+        # 7. Crear la cita de forma atómica
+        with transaction.atomic():
+            matricula = generate_matricula(prop.tenant_id)
+            appointment = Appointment.objects.create(
+                tenant=prop.tenant,
+                property=prop,
+                agent_membership=agent_membership,
+                client_membership=client_membership,
+                client_name=data.get('name', '') or (
+                    request.user.get_full_name() if request.user.is_authenticated else ''
+                ),
+                client_email=data.get('email', '') or (
+                    request.user.email if request.user.is_authenticated else ''
+                ),
+                client_phone=data.get('phone', ''),
+                matricula=matricula,
+                scheduled_date=target_date,
+                scheduled_time=target_time,
+                duration_minutes=slot_duration,
+                status=Appointment.Status.PROGRAMADA,
+            )
+
+        agent_user = agent_membership.user
+        return Response({
+            'id': appointment.pk,
+            'matricula': appointment.matricula,
+            'scheduled_date': str(appointment.scheduled_date),
+            'scheduled_time': appointment.scheduled_time.strftime('%H:%M:%S'),
+            'duration_minutes': appointment.duration_minutes,
+            'status': appointment.status,
+            'property': {'id': prop.pk, 'title': prop.title},
+            'agent': {'name': agent_user.get_full_name() or agent_user.email},
+        }, status=201)

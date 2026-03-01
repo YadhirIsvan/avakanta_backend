@@ -563,7 +563,7 @@
 
 ---
 
-### T-035 — Implementar POST /public/properties/{id}/appointment
+### [x] T-035 — Implementar POST /public/properties/{id}/appointment
 
 **Descripción:** Endpoint público para agendar una cita. Valida disponibilidad completa, genera matrícula, crea el `Appointment`. Si el usuario está autenticado vincula `client_membership_id`; si no, guarda nombre/email/teléfono.
 
