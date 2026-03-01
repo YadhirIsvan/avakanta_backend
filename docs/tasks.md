@@ -667,7 +667,7 @@
 
 ---
 
-### T-041 — Serializers admin para Properties
+### [x] T-041 — Serializers admin para Properties
 
 **Descripción:** Crear serializers para el panel admin: `AdminPropertyListSerializer` (con agent, documents_count), `AdminPropertyDetailSerializer` (con images, amenities, nearby_places, documents, assignments), `AdminPropertyCreateUpdateSerializer` (con `amenity_ids`).
 
