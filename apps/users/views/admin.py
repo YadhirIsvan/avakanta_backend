@@ -11,6 +11,8 @@ from ..serializers.admin import (
     AdminAgentListSerializer,
     AdminAgentDetailSerializer,
     AdminAgentCreateSerializer,
+    AdminClientListSerializer,
+    AdminClientDetailSerializer,
 )
 
 
@@ -146,3 +148,55 @@ class AdminAgentDetailView(APIView):
         membership.is_active = False
         membership.save(update_fields=['is_active'])
         return Response(status=204)
+
+
+def _client_queryset(tenant):
+    return (
+        TenantMembership.objects
+        .filter(tenant=tenant, role=TenantMembership.Role.CLIENT, is_active=True)
+        .select_related('user')
+        .annotate(
+            purchase_processes_count=Count('client_purchase_processes', distinct=True),
+            sale_processes_count=Count('client_sale_processes', distinct=True),
+        )
+    )
+
+
+class AdminClientListView(APIView):
+    permission_classes = [IsAuthenticated, IsAdmin]
+    pagination_class = StandardPagination
+
+    def get(self, request):
+        qs = _client_queryset(request.tenant)
+
+        search = request.query_params.get('search')
+        if search:
+            qs = qs.filter(
+                Q(user__first_name__icontains=search) |
+                Q(user__last_name__icontains=search) |
+                Q(user__email__icontains=search)
+            )
+
+        qs = qs.order_by('user__first_name', 'user__last_name')
+        paginator = self.pagination_class()
+        page = paginator.paginate_queryset(qs, request)
+        return paginator.get_paginated_response(
+            AdminClientListSerializer(page, many=True).data
+        )
+
+
+class AdminClientDetailView(APIView):
+    permission_classes = [IsAuthenticated, IsAdmin]
+
+    def get(self, request, pk):
+        # pk = User.pk
+        membership = (
+            TenantMembership.objects
+            .filter(tenant=request.tenant, role=TenantMembership.Role.CLIENT,
+                    is_active=True, user__pk=pk)
+            .select_related('user')
+            .first()
+        )
+        if not membership:
+            return Response({'error': 'Cliente no encontrado.'}, status=404)
+        return Response(AdminClientDetailSerializer(membership).data)

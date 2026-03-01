@@ -15,12 +15,15 @@ from core.validators import (
     ALLOWED_IMAGE_TYPES, MAX_IMAGE_SIZE_MB,
     ALLOWED_DOCUMENT_TYPES, MAX_DOCUMENT_SIZE_MB,
 )
-from ..models import Property, PropertyImage, PropertyDocument
+from ..models import Property, PropertyAssignment, PropertyImage, PropertyDocument
 from ..serializers.admin import (
     AdminPropertyListSerializer,
     AdminPropertyDetailSerializer,
     AdminPropertyCreateUpdateSerializer,
     AdminPropertyImageSerializer,
+    AdminAssignmentSerializer,
+    AdminAssignmentCreateSerializer,
+    AdminAssignmentUpdateSerializer,
 )
 
 
@@ -255,3 +258,99 @@ class AdminPropertyToggleFeaturedView(APIView):
         prop.is_featured = not prop.is_featured
         prop.save(update_fields=['is_featured'])
         return Response({'is_featured': prop.is_featured})
+
+
+class AdminAssignmentView(APIView):
+    permission_classes = [IsAuthenticated, IsAdmin]
+
+    def get(self, request):
+        # Unassigned: active properties with no assignments at all
+        unassigned = (
+            Property.objects
+            .filter(tenant=request.tenant, is_active=True)
+            .filter(assignments__isnull=True)
+            .values('id', 'title', 'property_type')
+        )
+
+        # Assigned: group by property
+        assignments = (
+            PropertyAssignment.objects
+            .filter(property__tenant=request.tenant, property__is_active=True)
+            .select_related('property', 'agent_membership__user')
+            .order_by('property__title', 'agent_membership__user__first_name')
+        )
+
+        # Build the assignments map
+        prop_map = {}
+        for a in assignments:
+            pid = a.property_id
+            if pid not in prop_map:
+                prop_map[pid] = {
+                    'property': {'id': a.property.pk, 'title': a.property.title},
+                    'agents': [],
+                }
+            user = a.agent_membership.user
+            prop_map[pid]['agents'].append({
+                'id': a.pk,
+                'membership_id': a.agent_membership_id,
+                'name': user.get_full_name() or user.email,
+                'is_visible': a.is_visible,
+            })
+
+        return Response({
+            'unassigned_properties': list(unassigned),
+            'assignments': list(prop_map.values()),
+        })
+
+    def post(self, request):
+        serializer = AdminAssignmentCreateSerializer(data=request.data)
+        serializer.is_valid(raise_exception=True)
+        data = serializer.validated_data
+
+        prop = Property.objects.filter(pk=data['property_id'], tenant=request.tenant, is_active=True).first()
+        if not prop:
+            return Response({'error': 'Propiedad no encontrada.'}, status=400)
+
+        from apps.users.models import TenantMembership
+        membership = TenantMembership.objects.filter(
+            pk=data['agent_membership_id'], tenant=request.tenant, role='agent', is_active=True
+        ).first()
+        if not membership:
+            return Response({'error': 'Agente no encontrado.'}, status=400)
+
+        if PropertyAssignment.objects.filter(property=prop, agent_membership=membership).exists():
+            return Response({'error': 'Este agente ya está asignado a esta propiedad.'}, status=400)
+
+        assignment = PropertyAssignment.objects.create(
+            property=prop,
+            agent_membership=membership,
+            is_visible=data['is_visible'],
+        )
+        return Response(AdminAssignmentSerializer(assignment).data, status=201)
+
+
+class AdminAssignmentDetailView(APIView):
+    permission_classes = [IsAuthenticated, IsAdmin]
+
+    def _get_assignment(self, pk, tenant):
+        return PropertyAssignment.objects.filter(
+            pk=pk, property__tenant=tenant
+        ).first()
+
+    def patch(self, request, pk):
+        assignment = self._get_assignment(pk, request.tenant)
+        if not assignment:
+            return Response({'error': 'Asignación no encontrada.'}, status=404)
+
+        serializer = AdminAssignmentUpdateSerializer(data=request.data)
+        serializer.is_valid(raise_exception=True)
+        assignment.is_visible = serializer.validated_data['is_visible']
+        assignment.save(update_fields=['is_visible'])
+        return Response(AdminAssignmentSerializer(assignment).data)
+
+    def delete(self, request, pk):
+        assignment = self._get_assignment(pk, request.tenant)
+        if not assignment:
+            return Response({'error': 'Asignación no encontrada.'}, status=404)
+        assignment.delete()
+        return Response(status=204)

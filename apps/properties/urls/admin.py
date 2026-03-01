@@ -6,6 +6,8 @@ from ..views.admin import (
     AdminPropertyImageDeleteView,
     AdminPropertyDocumentView,
     AdminPropertyToggleFeaturedView,
+    AdminAssignmentView,
+    AdminAssignmentDetailView,
 )
 
 urlpatterns = [
@@ -15,4 +17,6 @@ urlpatterns = [
     path('properties/<int:pk>/images/<int:image_id>', AdminPropertyImageDeleteView.as_view(), name='admin-property-image-delete'),
     path('properties/<int:pk>/documents', AdminPropertyDocumentView.as_view(), name='admin-property-documents'),
     path('properties/<int:pk>/toggle-featured', AdminPropertyToggleFeaturedView.as_view(), name='admin-property-toggle-featured'),
+    path('assignments', AdminAssignmentView.as_view(), name='admin-assignments'),
+    path('assignments/<int:pk>', AdminAssignmentDetailView.as_view(), name='admin-assignment-detail'),
 ]

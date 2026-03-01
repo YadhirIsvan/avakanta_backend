@@ -76,3 +76,86 @@ class AdminAgentCreateSerializer(serializers.Serializer):
     phone = serializers.CharField(max_length=50, required=False, allow_blank=True, default='')
     zone = serializers.CharField(max_length=150, required=False, allow_blank=True, default='')
     bio = serializers.CharField(required=False, allow_blank=True, default='')
+
+
+# ── Clients ──────────────────────────────────────────────────────────────────
+
+class AdminClientListSerializer(serializers.Serializer):
+    """Serializes TenantMembership (role=client) with annotated stats."""
+    id = serializers.IntegerField(source='user.pk')
+    membership_id = serializers.IntegerField(source='pk')
+    name = serializers.SerializerMethodField()
+    email = serializers.EmailField(source='user.email')
+    phone = serializers.CharField(source='user.phone')
+    avatar = serializers.CharField(source='user.avatar')
+    city = serializers.CharField(source='user.city')
+    purchase_processes_count = serializers.IntegerField()
+    sale_processes_count = serializers.IntegerField()
+    date_joined = serializers.DateTimeField(source='user.date_joined')
+
+    def get_name(self, obj):
+        return obj.user.get_full_name() or obj.user.email
+
+
+class AdminClientDetailSerializer(serializers.Serializer):
+    id = serializers.IntegerField(source='user.pk')
+    membership_id = serializers.IntegerField(source='pk')
+    name = serializers.SerializerMethodField()
+    email = serializers.EmailField(source='user.email')
+    phone = serializers.CharField(source='user.phone')
+    city = serializers.CharField(source='user.city')
+    purchase_processes = serializers.SerializerMethodField()
+    sale_processes = serializers.SerializerMethodField()
+
+    def get_name(self, obj):
+        return obj.user.get_full_name() or obj.user.email
+
+    def get_purchase_processes(self, obj):
+        processes = (
+            obj.client_purchase_processes
+            .select_related('property', 'agent_membership__user')
+            .prefetch_related('property__images')
+            .order_by('-created_at')
+        )
+        result = []
+        for p in processes:
+            cover = p.property.images.filter(is_cover=True).first()
+            agent_user = p.agent_membership.user if p.agent_membership_id else None
+            result.append({
+                'id': p.pk,
+                'status': p.status,
+                'overall_progress': p.overall_progress,
+                'property': {
+                    'id': p.property_id,
+                    'title': p.property.title,
+                    'image': cover.image_url if cover else None,
+                },
+                'agent': {'name': agent_user.get_full_name() or agent_user.email if agent_user else None},
+                'documents': [],
+                'created_at': p.created_at,
+            })
+        return result
+
+    def get_sale_processes(self, obj):
+        processes = (
+            obj.client_sale_processes
+            .select_related('property', 'agent_membership__user')
+            .prefetch_related('property__images')
+            .order_by('-created_at')
+        )
+        result = []
+        for p in processes:
+            cover = p.property.images.filter(is_cover=True).first()
+            agent_user = p.agent_membership.user if p.agent_membership_id else None
+            result.append({
+                'id': p.pk,
+                'status': p.status,
+                'property': {
+                    'id': p.property_id,
+                    'title': p.property.title,
+                    'image': cover.image_url if cover else None,
+                },
+                'agent': {'name': agent_user.get_full_name() or agent_user.email if agent_user else None},
+                'created_at': p.created_at,
+            })
+        return result

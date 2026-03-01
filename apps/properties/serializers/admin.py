@@ -181,3 +181,21 @@ class AdminPropertyCreateUpdateSerializer(serializers.ModelSerializer):
         if amenity_ids is not None:
             self._sync_amenities(instance, amenity_ids)
         return instance
+
+
+class AdminAssignmentSerializer(serializers.ModelSerializer):
+    assigned_at = serializers.DateTimeField(read_only=True)
+
+    class Meta:
+        model = PropertyAssignment
+        fields = ['id', 'property_id', 'agent_membership_id', 'is_visible', 'assigned_at']
+
+
+class AdminAssignmentCreateSerializer(serializers.Serializer):
+    property_id = serializers.IntegerField()
+    agent_membership_id = serializers.IntegerField()
+    is_visible = serializers.BooleanField(default=True)
+
+
+class AdminAssignmentUpdateSerializer(serializers.Serializer):
+    is_visible = serializers.BooleanField()

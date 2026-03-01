@@ -876,7 +876,7 @@
 
 ---
 
-### T-054 — Implementar CRUD /admin/assignments
+### [x] T-054 — Implementar CRUD /admin/assignments
 
 **Descripción:** Mapa de asignaciones (`GET`), asignar agente a propiedad (`POST`), actualizar visibilidad (`PATCH`), desasignar (`DELETE`).
 
@@ -896,7 +896,7 @@
 
 ---
 
-### T-055 — Implementar GET /admin/clients y GET /admin/clients/{id}
+### [x] T-055 — Implementar GET /admin/clients y GET /admin/clients/{id}
 
 **Descripción:** Directorio de clientes del tenant con búsqueda. Detalle con todos sus `purchase_processes` y `sale_processes`.
 
