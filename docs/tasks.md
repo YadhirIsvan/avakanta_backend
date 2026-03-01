@@ -585,7 +585,7 @@
 
 ---
 
-### T-036 — Crear modelos PurchaseProcess y SaleProcess
+### [x] T-036 — Crear modelos PurchaseProcess y SaleProcess
 
 **Descripción:** Crear `PurchaseProcess` con todos los campos del schema (incluyendo `sale_price`, `payment_method`, `closed_at`). Crear `SaleProcess`. Crear `ProcessStatusHistory` con `process_type` enum y `process_id` genérico.
 
