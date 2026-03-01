@@ -1,6 +1,7 @@
-from rest_framework.generics import ListCreateAPIView
+from rest_framework.generics import ListCreateAPIView, RetrieveUpdateDestroyAPIView
 from rest_framework.permissions import IsAuthenticated
 from rest_framework.filters import SearchFilter
+from rest_framework.response import Response
 
 from core.mixins import TenantQuerySetMixin
 from core.pagination import StandardPagination
@@ -57,8 +58,47 @@ class AdminPropertyListCreateView(TenantQuerySetMixin, ListCreateAPIView):
         self.perform_create(serializer)
         instance = serializer.instance
         detail_serializer = AdminPropertyDetailSerializer(
-            instance,
+            instance, context=self.get_serializer_context(),
+        )
+        return Response(detail_serializer.data, status=201)
+
+
+class AdminPropertyDetailView(TenantQuerySetMixin, RetrieveUpdateDestroyAPIView):
+    permission_classes = [IsAuthenticated, IsAdmin]
+    http_method_names = ['get', 'patch', 'delete', 'head', 'options']
+
+    queryset = (
+        Property.objects
+        .select_related('city__state')
+        .prefetch_related(
+            'images',
+            'property_amenities__amenity',
+            'nearby_places',
+            'documents',
+            'assignments__agent_membership__user',
+        )
+    )
+
+    def get_serializer_class(self):
+        if self.request.method == 'PATCH':
+            return AdminPropertyCreateUpdateSerializer
+        return AdminPropertyDetailSerializer
+
+    def update(self, request, *args, **kwargs):
+        instance = self.get_object()
+        serializer = self.get_serializer(instance, data=request.data, partial=True)
+        serializer.is_valid(raise_exception=True)
+        serializer.save()
+        # Reload with all relations for detail response
+        instance.refresh_from_db()
+        detail = AdminPropertyDetailSerializer(
+            self.get_queryset().get(pk=instance.pk),
             context=self.get_serializer_context(),
         )
-        from rest_framework.response import Response
-        return Response(detail_serializer.data, status=201)
+        return Response(detail.data)
+
+    def destroy(self, request, *args, **kwargs):
+        instance = self.get_object()
+        instance.is_active = False
+        instance.save(update_fields=['is_active'])
+        return Response(status=204)

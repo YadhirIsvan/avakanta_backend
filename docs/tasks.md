@@ -697,7 +697,7 @@
 
 ---
 
-### T-043 — Implementar GET, PATCH, DELETE /admin/properties/{id}
+### [x] T-043 — Implementar GET, PATCH, DELETE /admin/properties/{id}
 
 **Descripción:** Detalle, actualización parcial y soft-delete (`is_active=False`) de propiedad individual.
 
