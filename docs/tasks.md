@@ -712,7 +712,7 @@
 
 ---
 
-### T-044 — Implementar subida y borrado de imágenes de propiedades
+### [x] T-044 — Implementar subida y borrado de imágenes de propiedades
 
 **Descripción:** `POST /admin/properties/{id}/images` acepta `multipart/form-data` con uno o varios archivos. Guarda las imágenes en `MEDIA_ROOT` y crea registros `PropertyImage`. `DELETE /admin/properties/{id}/images/{image_id}` elimina la imagen del disco y el registro.
 
