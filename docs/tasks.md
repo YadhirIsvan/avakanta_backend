@@ -438,7 +438,7 @@
 
 ---
 
-### T-027 — Serializers públicos de Properties
+### [x] T-027 — Serializers públicos de Properties
 
 **Descripción:** Crear `PublicPropertyListSerializer` (campos del listado) y `PublicPropertyDetailSerializer` (detalle completo). El list serializer debe incluir campos computados: `address` (concatenación), `image` (cover), `days_listed`, `interested` (annotate count). El detail serializer incluye: `images`, `amenities`, `nearby_places`, `agent`, `coordinates`.
 
