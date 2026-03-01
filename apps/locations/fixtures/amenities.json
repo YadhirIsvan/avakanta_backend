@@ -1,0 +1,37 @@
+[
+  {
+    "model": "locations.amenity",
+    "pk": 1,
+    "fields": { "name": "Alberca",         "icon": "waves"     }
+  },
+  {
+    "model": "locations.amenity",
+    "pk": 2,
+    "fields": { "name": "Gimnasio",         "icon": "dumbbell"  }
+  },
+  {
+    "model": "locations.amenity",
+    "pk": 3,
+    "fields": { "name": "Seguridad",        "icon": "shield"    }
+  },
+  {
+    "model": "locations.amenity",
+    "pk": 4,
+    "fields": { "name": "Elevador",         "icon": "arrow-up"  }
+  },
+  {
+    "model": "locations.amenity",
+    "pk": 5,
+    "fields": { "name": "Estacionamiento",  "icon": "car"       }
+  },
+  {
+    "model": "locations.amenity",
+    "pk": 6,
+    "fields": { "name": "Jardín",           "icon": "leaf"      }
+  },
+  {
+    "model": "locations.amenity",
+    "pk": 7,
+    "fields": { "name": "Roof Garden",      "icon": "building"  }
+  }
+]

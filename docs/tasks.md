@@ -393,7 +393,7 @@
 
 ---
 
-### T-024 — Crear modelos de Amenity y fixtures
+### [x] T-024 — Crear modelos de Amenity y fixtures
 
 **Descripción:** Crear modelo `Amenity` en la app `apps/locations` (o crear `apps/properties`). Crear fixture con las 7 amenidades: Alberca, Gimnasio, Seguridad, Elevador, Estacionamiento, Jardín, Roof Garden con sus iconos lucide-react.
 
