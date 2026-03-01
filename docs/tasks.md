@@ -728,7 +728,7 @@
 
 ---
 
-### T-045 — Implementar subida de documentos y toggle-featured
+### [x] T-045 — Implementar subida de documentos y toggle-featured
 
 **Descripción:** `POST /admin/properties/{id}/documents` acepta `multipart/form-data`. `PATCH /admin/properties/{id}/toggle-featured` invierte el valor de `is_featured`.
 

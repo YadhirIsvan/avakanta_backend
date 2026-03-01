@@ -10,8 +10,12 @@ from rest_framework.views import APIView
 from core.mixins import TenantQuerySetMixin
 from core.pagination import StandardPagination
 from core.permissions import IsAdmin
-from core.validators import validate_file_type, validate_file_size, ALLOWED_IMAGE_TYPES, MAX_IMAGE_SIZE_MB
-from ..models import Property, PropertyImage
+from core.validators import (
+    validate_file_type, validate_file_size,
+    ALLOWED_IMAGE_TYPES, MAX_IMAGE_SIZE_MB,
+    ALLOWED_DOCUMENT_TYPES, MAX_DOCUMENT_SIZE_MB,
+)
+from ..models import Property, PropertyImage, PropertyDocument
 from ..serializers.admin import (
     AdminPropertyListSerializer,
     AdminPropertyDetailSerializer,
@@ -185,3 +189,69 @@ class AdminPropertyImageDeleteView(APIView):
 
         image.delete()
         return Response(status=204)
+
+
+class AdminPropertyDocumentView(APIView):
+    permission_classes = [IsAuthenticated, IsAdmin]
+
+    def post(self, request, pk):
+        prop = Property.objects.filter(pk=pk, tenant=request.tenant).first()
+        if not prop:
+            return Response({'error': 'Propiedad no encontrada.'}, status=404)
+
+        file = request.FILES.get('file')
+        name = request.data.get('name', '').strip()
+
+        if not file:
+            return Response({'error': 'Se requiere el archivo.'}, status=400)
+        if not name:
+            return Response({'error': 'Se requiere el nombre del documento.'}, status=400)
+
+        try:
+            validate_file_type(file, ALLOWED_DOCUMENT_TYPES)
+            validate_file_size(file, MAX_DOCUMENT_SIZE_MB)
+        except Exception as e:
+            return Response({'error': str(e)}, status=400)
+
+        rel_path = f'documents/{prop.pk}/{file.name}'
+        abs_path = os.path.join(settings.MEDIA_ROOT, rel_path)
+        os.makedirs(os.path.dirname(abs_path), exist_ok=True)
+        with open(abs_path, 'wb+') as dest:
+            for chunk in file.chunks():
+                dest.write(chunk)
+
+        # Resolve uploader membership
+        from apps.users.models import TenantMembership
+        membership = TenantMembership.objects.filter(
+            user=request.user, tenant=request.tenant, is_active=True
+        ).first()
+
+        doc = PropertyDocument.objects.create(
+            property=prop,
+            uploaded_by_membership=membership,
+            name=name,
+            file_url=f'/media/{rel_path}',
+            mime_type=file.content_type,
+            size_bytes=file.size,
+        )
+
+        return Response({
+            'id': doc.pk,
+            'name': doc.name,
+            'file_url': doc.file_url,
+            'mime_type': doc.mime_type,
+            'size_bytes': doc.size_bytes,
+        }, status=201)
+
+
+class AdminPropertyToggleFeaturedView(APIView):
+    permission_classes = [IsAuthenticated, IsAdmin]
+
+    def patch(self, request, pk):
+        prop = Property.objects.filter(pk=pk, tenant=request.tenant).first()
+        if not prop:
+            return Response({'error': 'Propiedad no encontrada.'}, status=404)
+
+        prop.is_featured = not prop.is_featured
+        prop.save(update_fields=['is_featured'])
+        return Response({'is_featured': prop.is_featured})
