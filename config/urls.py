@@ -7,6 +7,9 @@ from drf_spectacular.views import SpectacularAPIView, SpectacularSwaggerView, Sp
 urlpatterns = [
     path('admin/', admin.site.urls),
 
+    # Auth
+    path('api/v1/auth/', include('apps.users.urls.auth')),
+
     # Catálogos globales (público)
     path('api/v1/catalogs/', include('apps.locations.urls')),
 

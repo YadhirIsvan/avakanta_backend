@@ -306,7 +306,7 @@
 
 ---
 
-### T-019 — Configurar JWT y sistema OTP
+### [x] T-019 — Configurar JWT y sistema OTP
 
 **Descripción:** Configurar `djangorestframework-simplejwt` según spec (2h access, 7d refresh, rotación). Crear modelo `OTPCode` con campos `email`, `code_hash`, `created_at`, `expires_at` (o usar Django cache). Implementar lógica de generación/hash/validación de OTP de 6 dígitos.
 
@@ -323,7 +323,7 @@
 
 ---
 
-### T-020 — Implementar POST /auth/email/otp
+### [x] T-020 — Implementar POST /auth/email/otp
 
 **Descripción:** Endpoint que recibe `email`, crea o recupera el usuario, genera y guarda el OTP hasheado, y envía el email (usar `django.core.mail.send_mail` en dev con consola backend).
 
