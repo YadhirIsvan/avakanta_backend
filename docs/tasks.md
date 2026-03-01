@@ -828,7 +828,7 @@
 
 ---
 
-### T-051 — Serializers y endpoints GET/POST /admin/appointments
+### [x] T-051 — Serializers y endpoints GET/POST /admin/appointments
 
 **Descripción:** Crear serializers admin para citas. Implementar listado con filtros (`date`, `agent_id`, `status`, `search` por matrícula/nombre) y creación con validación de disponibilidad y generación de matrícula.
 
@@ -845,7 +845,7 @@
 
 ---
 
-### T-052 — Implementar PATCH y DELETE /admin/appointments/{id}
+### [x] T-052 — Implementar PATCH y DELETE /admin/appointments/{id}
 
 **Descripción:** Actualización de cita (estado, fecha/hora, notas). Al cambiar fecha/hora, re-valida disponibilidad excluyendo la cita actual. Si `status=cancelada`, `cancellation_reason` es obligatorio.
 
@@ -859,7 +859,7 @@
 
 ---
 
-### T-053 — Implementar GET /admin/appointments/availability
+### [x] T-053 — Implementar GET /admin/appointments/availability
 
 **Descripción:** Endpoint que recibe `agent_id` y `date` y retorna slots disponibles usando `AvailabilityService`. Acepta `exclude_appointment_id` para ignorar la cita actual al editar.
 

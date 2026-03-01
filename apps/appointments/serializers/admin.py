@@ -1,6 +1,6 @@
 from rest_framework import serializers
 
-from ..models import AgentSchedule, AgentUnavailability, ScheduleBreak
+from ..models import AgentSchedule, AgentUnavailability, Appointment, ScheduleBreak
 
 
 class AdminScheduleBreakInputSerializer(serializers.Serializer):
@@ -79,4 +79,52 @@ class AdminAgentUnavailabilityInputSerializer(serializers.Serializer):
     def validate(self, data):
         if data['start_date'] > data['end_date']:
             raise serializers.ValidationError('start_date debe ser menor o igual a end_date.')
+        return data
+
+
+class AdminAppointmentListSerializer(serializers.ModelSerializer):
+    property = serializers.SerializerMethodField()
+    agent = serializers.SerializerMethodField()
+
+    class Meta:
+        model = Appointment
+        fields = [
+            'id', 'matricula', 'scheduled_date', 'scheduled_time', 'duration_minutes',
+            'status', 'client_name', 'client_email', 'client_phone',
+            'property', 'agent',
+        ]
+
+    def get_property(self, obj):
+        return {'id': obj.property_id, 'title': obj.property.title}
+
+    def get_agent(self, obj):
+        membership = obj.agent_membership
+        agent_profile = getattr(membership, 'agent_profile', None)
+        name = membership.user.get_full_name() or membership.user.email
+        return {'id': agent_profile.pk if agent_profile else None, 'name': name}
+
+
+class AdminAppointmentCreateSerializer(serializers.Serializer):
+    property_id = serializers.IntegerField()
+    agent_membership_id = serializers.IntegerField()
+    client_membership_id = serializers.IntegerField(required=False, allow_null=True, default=None)
+    scheduled_date = serializers.DateField()
+    scheduled_time = serializers.TimeField()
+    duration_minutes = serializers.IntegerField(required=False, allow_null=True, default=None)
+    notes = serializers.CharField(required=False, allow_blank=True, default='')
+
+
+class AdminAppointmentUpdateSerializer(serializers.Serializer):
+    status = serializers.ChoiceField(choices=Appointment.Status.choices, required=False)
+    scheduled_date = serializers.DateField(required=False)
+    scheduled_time = serializers.TimeField(required=False)
+    duration_minutes = serializers.IntegerField(required=False, allow_null=True)
+    notes = serializers.CharField(required=False, allow_blank=True)
+    cancellation_reason = serializers.CharField(required=False, allow_blank=True)
+
+    def validate(self, data):
+        if data.get('status') == Appointment.Status.CANCELADA and not data.get('cancellation_reason'):
+            raise serializers.ValidationError(
+                {'cancellation_reason': 'Este campo es obligatorio cuando el estado es cancelada.'}
+            )
         return data
