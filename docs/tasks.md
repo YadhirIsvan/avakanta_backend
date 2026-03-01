@@ -452,7 +452,7 @@
 
 ---
 
-### T-028 — Implementar GET /public/properties (listado con filtros)
+### [x] T-028 — Implementar GET /public/properties (listado con filtros)
 
 **Descripción:** ViewSet o APIView para listar propiedades publicadas. Filtros: `zone`, `type` (property_type), `state` (property_condition), `amenities` (ids), `price_min`, `price_max`, `featured`, `search`. Paginación. Ordenamiento. Solo mostrar `listing_type=sale`, `status=disponible`, `is_active=True`.
 
@@ -469,7 +469,7 @@
 
 ---
 
-### T-029 — Implementar GET /public/properties/{id} (detalle con incremento de views)
+### [x] T-029 — Implementar GET /public/properties/{id} (detalle con incremento de views)
 
 **Descripción:** Endpoint de detalle que incrementa `views += 1` en cada request. Retorna detalle completo con imágenes, amenidades, lugares cercanos, datos del agente visible.
 
