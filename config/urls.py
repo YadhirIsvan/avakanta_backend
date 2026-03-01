@@ -12,6 +12,7 @@ urlpatterns = [
 
     # Público
     path('api/v1/public/', include('apps.properties.urls.public')),
+    path('api/v1/public/', include('apps.appointments.urls.public')),
 
     # Catálogos globales (público)
     path('api/v1/catalogs/', include('apps.locations.urls')),

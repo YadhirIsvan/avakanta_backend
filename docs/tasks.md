@@ -548,7 +548,7 @@
 
 ---
 
-### T-034 — Implementar GET /public/appointment/slots
+### [x] T-034 — Implementar GET /public/appointment/slots
 
 **Descripción:** Endpoint público que recibe `property_id` y `date`, y retorna los slots disponibles del agente asignado a esa propiedad usando `AvailabilityService`.
 
