@@ -1,0 +1,587 @@
+// ============================================
+// AVAKANTA - Real Estate Multi-Tenant Platform
+// Database Schema v3 - Actualizado con análisis del frontend
+// DBML for dbdiagram.io
+// ============================================
+
+// =====================
+// TENANTS (Inmobiliarias)
+// =====================
+
+Table tenants {
+  id int [pk, increment]
+  name varchar(255) [not null]
+  slug varchar(255) [unique, not null, note: 'URL-friendly identifier, ej: altas-montanas']
+  logo varchar(500)
+  email varchar(255)
+  phone varchar(50)
+  website varchar(500)
+  address text
+  city_id int [ref: > cities.id]
+  is_active boolean [default: true]
+  created_at timestamp [default: `now()`]
+  updated_at timestamp
+}
+
+// =====================
+// USERS & AUTH
+// =====================
+
+Table users {
+  id int [pk, increment]
+  email varchar(255) [unique, not null]
+  password varchar(255) [note: 'Puede ser null si el user se registra con Google/Apple']
+  first_name varchar(150)
+  last_name varchar(150)
+  phone varchar(50)
+  avatar varchar(500)
+  city varchar(150) [note: 'Ciudad del usuario (perfil del cliente)']
+  auth_provider auth_provider_enum [default: 'email']
+  is_active boolean [default: true]
+  is_staff boolean [default: false]
+  date_joined timestamp [default: `now()`]
+  last_login timestamp
+}
+
+Enum auth_provider_enum {
+  email [note: 'OTP por email']
+  google
+  apple
+}
+
+Table tenant_memberships {
+  id int [pk, increment]
+  user_id int [ref: > users.id, not null]
+  tenant_id int [ref: > tenants.id, not null]
+  role role_enum [not null]
+  is_active boolean [default: true]
+  created_at timestamp [default: `now()`]
+  updated_at timestamp
+
+  indexes {
+    (user_id, tenant_id) [unique, name: 'unique_user_tenant']
+  }
+}
+
+Enum role_enum {
+  admin
+  agent
+  client
+}
+
+// =====================
+// AGENT PROFILES (Datos extra del agente por tenant)
+// =====================
+
+Table agent_profiles {
+  id int [pk, increment]
+  membership_id int [ref: - tenant_memberships.id, unique, not null, note: 'Debe ser role=agent']
+  zone varchar(150) [note: 'Zona asignada: Norte, Sur, Centro, etc.']
+  bio text
+  score decimal(3,2) [default: 0, note: 'Score/calificación del agente 0-5']
+  created_at timestamp [default: `now()`]
+  updated_at timestamp
+
+  Note: '''
+  Campos computados para el front (NO son columnas):
+  - properties_count = count(property_assignments)
+  - sales_count = count(purchase_processes where status=cerrado)
+  - leads_count = count(purchase_processes where status=lead)
+  - active_leads = count(purchase_processes where status NOT IN (cerrado, cancelado))
+  - today_appointments = count(appointments where date=today)
+  - month_sales = count(purchase_processes where status=cerrado AND month=current)
+  '''
+}
+
+// =====================
+// USER NOTIFICATION PREFERENCES
+// =====================
+
+Table user_notification_preferences {
+  id int [pk, increment]
+  membership_id int [ref: - tenant_memberships.id, unique, not null]
+  new_properties boolean [default: true]
+  price_updates boolean [default: true]
+  appointment_reminders boolean [default: true]
+  offers boolean [default: true]
+  updated_at timestamp
+}
+
+// =====================
+// LOCATIONS (Catálogos globales, sin tenant_id)
+// =====================
+
+Table countries {
+  id int [pk, increment]
+  name varchar(150) [not null]
+  code varchar(10) [unique]
+}
+
+Table states {
+  id int [pk, increment]
+  name varchar(150) [not null]
+  country_id int [ref: > countries.id, not null]
+  code varchar(20)
+}
+
+Table cities {
+  id int [pk, increment]
+  name varchar(150) [not null]
+  state_id int [ref: > states.id, not null]
+}
+
+// =====================
+// AMENITIES (Catálogo global)
+// =====================
+
+Table amenities {
+  id int [pk, increment]
+  name varchar(100) [unique, not null, note: 'Alberca, Gimnasio, Seguridad, Elevador, Estacionamiento, Jardín, Roof Garden']
+  icon varchar(50) [note: 'Nombre del ícono lucide-react']
+}
+
+// =====================
+// PROPERTIES
+// =====================
+
+Table properties {
+  id int [pk, increment]
+  tenant_id int [ref: > tenants.id, not null]
+  title varchar(255) [not null]
+  description text
+  listing_type listing_type_enum [not null]
+  status varchar(50) [not null, note: 'Depende del listing_type']
+  property_type property_type_enum [not null, note: 'Front lo recibe como "type"']
+  property_condition property_condition_enum [note: 'Front lo recibe como "state": Nueva, Semi-nueva, Usada']
+  price decimal(14,2) [not null]
+  currency varchar(10) [default: 'MXN']
+  bedrooms int [default: 0]
+  bathrooms int [default: 0]
+  parking_spaces int [default: 0]
+  construction_sqm decimal(10,2) [note: 'Front lo recibe como "sqm"']
+  land_sqm decimal(10,2)
+  views int [default: 0, note: 'Contador de visitas/vistas a la propiedad']
+  address_street varchar(255)
+  address_number varchar(50)
+  address_neighborhood varchar(255) [note: 'Colonia']
+  address_zip varchar(20)
+  city_id int [ref: > cities.id]
+  zone varchar(100) [note: 'Norte, Sur, Centro, Oriente, Poniente — para filtros']
+  latitude decimal(10,8)
+  longitude decimal(11,8)
+  video_id varchar(50) [note: 'YouTube video ID para video tour']
+  video_thumbnail varchar(500) [note: 'Thumbnail del video tour']
+  is_verified boolean [default: false, note: 'Propiedad verificada por la inmobiliaria']
+  is_featured boolean [default: false, note: 'Propiedad destacada en home']
+  is_active boolean [default: true]
+  created_at timestamp [default: `now()`]
+  updated_at timestamp
+
+  Note: '''
+  listing_type = sale → status: disponible, preventa, oportunidad, vendida
+  listing_type = pending_listing → status: documentacion, revision, aprobada, rechazada, publicada
+
+  Campos computados para el front (NO son columnas):
+  - daysListed = today - created_at
+  - interested = count(purchase_processes where property_id = this)
+  - trend = lógica de negocio (views últimos 7 días vs anteriores 7)
+  - image = property_images.image_url where is_cover = true
+  - progressStep = status numérico del purchase/sale process
+  - address = concatenación de street + number + neighborhood + city
+  - agent = datos del agente asignado (via property_assignments)
+  '''
+}
+
+Enum listing_type_enum {
+  sale
+  pending_listing
+}
+
+Enum property_type_enum {
+  house [note: 'Casa']
+  apartment [note: 'Departamento']
+  land [note: 'Terreno']
+  commercial [note: 'Comercial']
+  office [note: 'Oficina']
+  warehouse [note: 'Bodega']
+  other
+}
+
+Enum property_condition_enum {
+  new [note: 'Nueva']
+  semi_new [note: 'Semi-nueva']
+  used [note: 'Usada']
+}
+
+// =====================
+// PROPERTY IMAGES
+// =====================
+
+Table property_images {
+  id int [pk, increment]
+  property_id int [ref: > properties.id, not null]
+  image_url varchar(500) [not null]
+  is_cover boolean [default: false]
+  sort_order int [default: 0]
+  created_at timestamp [default: `now()`]
+}
+
+// =====================
+// PROPERTY AMENITIES (Many-to-Many)
+// =====================
+
+Table property_amenities {
+  id int [pk, increment]
+  property_id int [ref: > properties.id, not null]
+  amenity_id int [ref: > amenities.id, not null]
+
+  indexes {
+    (property_id, amenity_id) [unique, name: 'unique_property_amenity']
+  }
+}
+
+// =====================
+// PROPERTY DOCUMENTS (Documentos del admin y del cliente)
+// =====================
+
+Table property_documents {
+  id int [pk, increment]
+  property_id int [ref: > properties.id, not null]
+  uploaded_by_membership_id int [ref: > tenant_memberships.id, not null]
+  purchase_process_id int [ref: > purchase_processes.id, note: 'NULL si lo sube el admin, FK si lo sube el cliente en un proceso de compra']
+  name varchar(255) [not null]
+  file_url varchar(500) [not null]
+  mime_type varchar(100)
+  size_bytes bigint
+  document_stage varchar(50) [note: 'En qué etapa del proceso se subió']
+  created_at timestamp [default: `now()`]
+}
+
+// =====================
+// NEARBY PLACES (Lugares cercanos a una propiedad)
+// =====================
+
+Table property_nearby_places {
+  id int [pk, increment]
+  property_id int [ref: > properties.id, not null]
+  name varchar(255) [not null]
+  place_type varchar(100) [note: 'escuela, hospital, supermercado, parque, etc.']
+  distance_km decimal(5,2)
+}
+
+// =====================
+// PROPERTY ASSIGNMENTS (Agentes asignados a propiedades)
+// =====================
+
+Table property_assignments {
+  id int [pk, increment]
+  property_id int [ref: > properties.id, not null]
+  agent_membership_id int [ref: > tenant_memberships.id, not null]
+  is_visible boolean [default: true, note: 'Controla si se muestra en front']
+  assigned_at timestamp [default: `now()`]
+
+  indexes {
+    (property_id, agent_membership_id) [unique, name: 'unique_property_agent']
+  }
+}
+
+// =====================
+// SELLER LEADS (Captación de vendedores desde /vender)
+// =====================
+
+Table seller_leads {
+  id int [pk, increment]
+  tenant_id int [ref: > tenants.id, not null]
+  full_name varchar(255) [not null]
+  email varchar(255) [not null]
+  phone varchar(50) [not null]
+  property_type property_type_enum [not null]
+  location varchar(255)
+  square_meters decimal(10,2)
+  bedrooms int
+  bathrooms int
+  expected_price decimal(14,2)
+  status seller_lead_status_enum [default: 'new']
+  assigned_agent_membership_id int [ref: > tenant_memberships.id, note: 'Agente asignado para dar seguimiento']
+  notes text
+  created_at timestamp [default: `now()`]
+  updated_at timestamp
+
+  Note: 'Leads que llegan desde el formulario público de /vender. Cuando se aprueba, se crea una Property con listing_type=pending_listing y un sale_process.'
+}
+
+Enum seller_lead_status_enum {
+  new [note: 'Recién llegó']
+  contacted [note: 'Se contactó al vendedor']
+  in_review [note: 'En revisión']
+  converted [note: 'Se convirtió en propiedad + sale_process']
+  rejected [note: 'Rechazado']
+}
+
+// =====================
+// APPOINTMENTS (Citas)
+// =====================
+
+Table appointment_settings {
+  id int [pk, increment]
+  tenant_id int [ref: > tenants.id, unique, not null]
+  slot_duration_minutes int [default: 60, note: 'Default 60min según front (slots de 1hr: 09-18)']
+  max_advance_days int [default: 30]
+  min_advance_hours int [default: 24]
+  day_start_time time [default: '09:00', note: 'Hora inicio de jornada']
+  day_end_time time [default: '18:00', note: 'Hora fin de jornada']
+  created_at timestamp [default: `now()`]
+  updated_at timestamp
+}
+
+Table agent_schedules {
+  id int [pk, increment]
+  tenant_id int [ref: > tenants.id, not null]
+  agent_membership_id int [ref: > tenant_memberships.id, not null, note: 'Debe ser role=agent']
+  name varchar(100) [not null, note: 'Ej: Horario normal, Horario verano, Turno matutino']
+  monday boolean [default: false]
+  tuesday boolean [default: false]
+  wednesday boolean [default: false]
+  thursday boolean [default: false]
+  friday boolean [default: false]
+  saturday boolean [default: false]
+  sunday boolean [default: false]
+  start_time time [not null]
+  end_time time [not null]
+  has_lunch_break boolean [default: true]
+  lunch_start time
+  lunch_end time
+  valid_from date [note: 'Desde cuándo aplica este horario']
+  valid_until date [note: 'Hasta cuándo aplica, NULL = indefinido']
+  is_active boolean [default: true]
+  priority int [default: 0, note: 'Si hay 2 horarios activos el mismo día, gana el de mayor prioridad']
+  notes text
+  created_at timestamp [default: `now()`]
+  updated_at timestamp
+
+  Note: '''
+  Un agente puede tener múltiples horarios (ej: horario normal L-V y horario especial sábados).
+  Los booleans de día indican en qué días aplica este horario.
+  Si 2 horarios coinciden en un día, se usa el de mayor priority.
+  valid_from/valid_until permiten programar cambios de horario por temporada.
+  '''
+}
+
+Table schedule_breaks {
+  id int [pk, increment]
+  schedule_id int [ref: > agent_schedules.id, not null]
+  break_type break_type_enum [not null]
+  name varchar(100) [note: 'Ej: Comida, Café, Descanso']
+  start_time time [not null]
+  end_time time [not null]
+  created_at timestamp [default: `now()`]
+  updated_at timestamp
+}
+
+Enum break_type_enum {
+  lunch [note: 'Comida']
+  coffee [note: 'Café']
+  rest [note: 'Descanso']
+  other [note: 'Otro']
+}
+
+Table agent_unavailabilities {
+  id int [pk, increment]
+  tenant_id int [ref: > tenants.id, not null]
+  agent_membership_id int [ref: > tenant_memberships.id, not null]
+  start_date date [not null]
+  end_date date [not null]
+  reason unavailability_reason_enum [not null]
+  notes text
+  created_at timestamp [default: `now()`]
+  updated_at timestamp
+
+  Note: 'Días que el agente NO está disponible. Sobreescribe cualquier agent_schedule activo en esas fechas.'
+}
+
+Enum unavailability_reason_enum {
+  vacation [note: 'Vacaciones']
+  sick_leave [note: 'Incapacidad']
+  personal [note: 'Asunto personal']
+  training [note: 'Capacitación']
+  other [note: 'Otro']
+}
+
+Table appointments {
+  id int [pk, increment]
+  tenant_id int [ref: > tenants.id, not null]
+  property_id int [ref: > properties.id, not null]
+  client_membership_id int [ref: > tenant_memberships.id, note: 'NULL si la cita la agenda un visitante no registrado']
+  agent_membership_id int [ref: > tenant_memberships.id, not null]
+  client_name varchar(255) [note: 'Nombre del cliente (para visitantes no registrados)']
+  client_email varchar(255)
+  client_phone varchar(50)
+  matricula varchar(20) [unique, note: 'Formato CLI-YYYY-NNN, generado automáticamente']
+  scheduled_date date [not null]
+  scheduled_time time [not null]
+  duration_minutes int
+  status appointment_status_enum [default: 'programada']
+  notes text
+  cancellation_reason text
+  created_at timestamp [default: `now()`]
+  updated_at timestamp
+
+  Note: '''
+  La matrícula se genera automáticamente: CLI-{año}-{consecutivo}
+  El front permite agendar desde /propiedad/:id (visitante) y desde admin panel.
+  Verificación de disponibilidad: no solapar con citas existentes del agente,
+  respetando schedule_rules y duration_minutes.
+  '''
+}
+
+Enum appointment_status_enum {
+  programada [note: 'Recién creada']
+  confirmada [note: 'Confirmada por el agente']
+  en_progreso [note: 'En curso']
+  completada [note: 'Finalizada']
+  cancelada [note: 'Cancelada']
+  no_show [note: 'No se presentó']
+  reagendada [note: 'Se reagendó']
+}
+
+// =====================
+// PURCHASE PROCESS (Proceso de compra - 9 etapas del pipeline)
+// =====================
+
+Table purchase_processes {
+  id int [pk, increment]
+  tenant_id int [ref: > tenants.id, not null]
+  property_id int [ref: > properties.id, not null]
+  client_membership_id int [ref: > tenant_memberships.id, not null, note: 'Comprador']
+  agent_membership_id int [ref: > tenant_memberships.id, not null, note: 'Agente asignado']
+  status purchase_status_enum [default: 'lead']
+  overall_progress int [default: 0, note: '0-100, calculado según la etapa actual']
+  notes text
+  created_at timestamp [default: `now()`]
+  updated_at timestamp
+  sale_price decimal(14,2) [note: 'Se llena cuando status=cerrado']
+  payment_method varchar(100) [note: 'Crédito hipotecario, Contado, etc. Se llena cuando status=cerrado']
+  closed_at timestamp [note: 'Fecha de cierre de la venta']
+
+  Note: '''
+  Pipeline de 9 etapas (del Kanban del admin):
+  lead(0%) → visita(11%) → interes(22%) → pre_aprobacion(33%) → avaluo(44%)
+  → credito(56%) → docs_finales(67%) → escrituras(78%) → cerrado(100%)
+
+  El front muestra:
+  - overallProgress: porcentaje calculado
+  - processStage: label de la etapa actual
+  - Steps con allowUpload en ciertas etapas
+  '''
+}
+
+Enum purchase_status_enum {
+  lead [note: 'Lead - Cliente interesado']
+  visita [note: 'Visita agendada/realizada']
+  interes [note: 'Interés confirmado']
+  pre_aprobacion [note: 'Pre-aprobación crediticia']
+  avaluo [note: 'Avalúo de la propiedad']
+  credito [note: 'Trámite de crédito']
+  docs_finales [note: 'Documentos finales']
+  escrituras [note: 'Firma de escrituras']
+  cerrado [note: 'Proceso completado']
+  cancelado [note: 'Proceso cancelado']
+}
+
+// =====================
+// SALE PROCESS (Proceso de venta - 7 etapas del pipeline)
+// =====================
+
+Table sale_processes {
+  id int [pk, increment]
+  tenant_id int [ref: > tenants.id, not null]
+  property_id int [ref: > properties.id, not null]
+  client_membership_id int [ref: > tenant_memberships.id, not null, note: 'Vendedor/Propietario']
+  agent_membership_id int [ref: > tenant_memberships.id, note: 'Agente asignado al trámite']
+  status sale_status_enum [default: 'contacto_inicial']
+  notes text
+  created_at timestamp [default: `now()`]
+  updated_at timestamp
+
+  Note: '''
+  Pipeline de 7 etapas:
+  contacto_inicial → evaluacion → valuacion → presentacion
+  → firma_contrato → marketing → publicacion
+  '''
+}
+
+Enum sale_status_enum {
+  contacto_inicial [note: 'Contacto inicial con el vendedor']
+  evaluacion [note: 'Evaluación de la propiedad']
+  valuacion [note: 'Valuación/tasación']
+  presentacion [note: 'Presentación de propuesta']
+  firma_contrato [note: 'Firma de contrato de exclusiva']
+  marketing [note: 'Preparación de marketing/fotos']
+  publicacion [note: 'Publicada en la plataforma']
+  cancelado [note: 'Cancelado']
+}
+
+// =====================
+// STATUS HISTORY (Bitácora de cambios de estado)
+// =====================
+
+Table process_status_history {
+  id int [pk, increment]
+  process_type process_type_enum [not null]
+  process_id int [not null, note: 'ID del purchase_process o sale_process']
+  previous_status varchar(50)
+  new_status varchar(50) [not null]
+  changed_by_membership_id int [ref: > tenant_memberships.id, not null]
+  notes text
+  created_at timestamp [default: `now()`]
+}
+
+Enum process_type_enum {
+  purchase
+  sale
+}
+
+// =====================
+// NOTIFICATIONS
+// =====================
+
+Table notifications {
+  id int [pk, increment]
+  tenant_id int [ref: > tenants.id, not null]
+  membership_id int [ref: > tenant_memberships.id, not null]
+  title varchar(255) [not null]
+  message text
+  notification_type varchar(50) [note: 'appointment, purchase, sale, lead, system']
+  is_read boolean [default: false]
+  reference_type varchar(50) [note: 'appointment, purchase_process, sale_process, property']
+  reference_id int
+  created_at timestamp [default: `now()`]
+}
+
+// =====================
+// CREDIT SIMULATIONS (Para el flujo /credito - futuro)
+// =====================
+
+Table credit_simulations {
+  id int [pk, increment]
+  tenant_id int [ref: > tenants.id, not null]
+  user_id int [ref: > users.id, not null]
+  monthly_income decimal(14,2) [note: 'Ingreso mensual bruto']
+  age int
+  savings decimal(14,2) [note: 'Ahorro disponible para enganche']
+  monthly_debts decimal(14,2) [note: 'Deudas mensuales actuales']
+  approved_amount decimal(14,2) [note: 'Monto pre-aprobado calculado']
+  score int [note: 'Score crediticio calculado 0-100']
+  status credit_simulation_status_enum [default: 'simulated']
+  created_at timestamp [default: `now()`]
+
+  Note: '[PENDIENTE] Actualmente todo mock en el front. Implementar cuando se defina la lógica de scoring.'
+}
+
+Enum credit_simulation_status_enum {
+  simulated [note: 'Solo simulación']
+  documents_pending [note: 'Esperando documentos']
+  in_review [note: 'En revisión']
+  approved [note: 'Aprobado']
+  rejected [note: 'Rechazado']
+}
