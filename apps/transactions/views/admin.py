@@ -7,7 +7,7 @@ from rest_framework.views import APIView
 from core.pagination import StandardPagination
 from core.permissions import IsAdmin
 from apps.users.models import TenantMembership
-from ..models import PurchaseProcess, SaleProcess
+from ..models import PurchaseProcess, SaleProcess, SellerLead
 from ..serializers.admin import (
     AdminPurchaseProcessListSerializer,
     AdminPurchaseProcessCreateSerializer,
@@ -16,8 +16,16 @@ from ..serializers.admin import (
     AdminSaleProcessListSerializer,
     AdminSaleProcessCreateSerializer,
     AdminSaleProcessStatusSerializer,
+    AdminSellerLeadListSerializer,
+    AdminSellerLeadDetailSerializer,
+    AdminSellerLeadUpdateSerializer,
+    AdminSellerLeadConvertSerializer,
 )
-from ..services import update_purchase_process_status, update_sale_process_status
+from ..services import (
+    update_purchase_process_status,
+    update_sale_process_status,
+    convert_seller_lead,
+)
 
 
 def _purchase_qs(tenant):
@@ -267,3 +275,117 @@ class AdminSaleProcessStatusView(APIView):
             'status': process.status,
             'updated_at': process.updated_at,
         })
+
+
+# ── Seller Leads ──────────────────────────────────────────────────────────────
+
+def _lead_qs(tenant):
+    return (
+        SellerLead.objects
+        .filter(tenant=tenant)
+        .select_related('assigned_agent_membership__user', 'assigned_agent_membership__agent_profile')
+        .order_by('-created_at')
+    )
+
+
+class AdminSellerLeadListView(APIView):
+    permission_classes = [IsAuthenticated, IsAdmin]
+    pagination_class = StandardPagination
+
+    def get(self, request):
+        qs = _lead_qs(request.tenant)
+
+        status = request.query_params.get('status')
+        if status:
+            qs = qs.filter(status=status)
+
+        search = request.query_params.get('search')
+        if search:
+            qs = qs.filter(
+                Q(full_name__icontains=search) | Q(email__icontains=search)
+            )
+
+        paginator = self.pagination_class()
+        page = paginator.paginate_queryset(qs, request)
+        return paginator.get_paginated_response(
+            AdminSellerLeadListSerializer(page, many=True).data
+        )
+
+
+class AdminSellerLeadDetailView(APIView):
+    permission_classes = [IsAuthenticated, IsAdmin]
+
+    def get(self, request, pk):
+        lead = _lead_qs(request.tenant).filter(pk=pk).first()
+        if not lead:
+            return Response({'error': 'Seller lead no encontrado.'}, status=404)
+        return Response(AdminSellerLeadDetailSerializer(lead).data)
+
+    def patch(self, request, pk):
+        lead = _lead_qs(request.tenant).filter(pk=pk).first()
+        if not lead:
+            return Response({'error': 'Seller lead no encontrado.'}, status=404)
+
+        serializer = AdminSellerLeadUpdateSerializer(data=request.data, partial=True)
+        serializer.is_valid(raise_exception=True)
+        data = serializer.validated_data
+
+        update_fields = []
+
+        if 'status' in data:
+            lead.status = data['status']
+            update_fields.append('status')
+
+        if 'assigned_agent_membership_id' in data:
+            if data['assigned_agent_membership_id'] is None:
+                lead.assigned_agent_membership = None
+            else:
+                agent = TenantMembership.objects.filter(
+                    pk=data['assigned_agent_membership_id'],
+                    tenant=request.tenant, role='agent', is_active=True
+                ).first()
+                if not agent:
+                    return Response({'error': 'Agente no encontrado.'}, status=400)
+                lead.assigned_agent_membership = agent
+            update_fields.append('assigned_agent_membership')
+
+        if 'notes' in data:
+            lead.notes = data['notes']
+            update_fields.append('notes')
+
+        if update_fields:
+            update_fields.append('updated_at')
+            lead.save(update_fields=update_fields)
+
+        lead = _lead_qs(request.tenant).get(pk=lead.pk)
+        return Response(AdminSellerLeadDetailSerializer(lead).data)
+
+
+class AdminSellerLeadConvertView(APIView):
+    permission_classes = [IsAuthenticated, IsAdmin]
+
+    def post(self, request, pk):
+        lead = SellerLead.objects.filter(pk=pk, tenant=request.tenant).first()
+        if not lead:
+            return Response({'error': 'Seller lead no encontrado.'}, status=404)
+
+        if lead.status == SellerLead.Status.CONVERTED:
+            return Response({'error': 'Este lead ya fue convertido.'}, status=400)
+
+        serializer = AdminSellerLeadConvertSerializer(data=request.data)
+        serializer.is_valid(raise_exception=True)
+        data = serializer.validated_data
+
+        agent = TenantMembership.objects.filter(
+            pk=data['agent_membership_id'], tenant=request.tenant, role='agent', is_active=True
+        ).first()
+        if not agent:
+            return Response({'error': 'Agente no encontrado.'}, status=400)
+
+        prop, sale_process = convert_seller_lead(lead=lead, agent_membership=agent)
+
+        return Response({
+            'property_id': prop.pk,
+            'sale_process_id': sale_process.pk,
+            'message': 'Lead convertido. Se creó la propiedad y el proceso de venta.',
+        }, status=201)

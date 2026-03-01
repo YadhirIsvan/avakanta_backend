@@ -5,6 +5,9 @@ from ..views.admin import (
     AdminPurchaseProcessDetailView,
     AdminSaleProcessListCreateView,
     AdminSaleProcessStatusView,
+    AdminSellerLeadListView,
+    AdminSellerLeadDetailView,
+    AdminSellerLeadConvertView,
 )
 
 urlpatterns = [
@@ -15,4 +18,8 @@ urlpatterns = [
     # Sale processes
     path('sale-processes', AdminSaleProcessListCreateView.as_view(), name='admin-sale-list-create'),
     path('sale-processes/<int:pk>/status', AdminSaleProcessStatusView.as_view(), name='admin-sale-status'),
+    # Seller leads
+    path('seller-leads', AdminSellerLeadListView.as_view(), name='admin-seller-lead-list'),
+    path('seller-leads/<int:pk>', AdminSellerLeadDetailView.as_view(), name='admin-seller-lead-detail'),
+    path('seller-leads/<int:pk>/convert', AdminSellerLeadConvertView.as_view(), name='admin-seller-lead-convert'),
 ]

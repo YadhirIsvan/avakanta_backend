@@ -137,3 +137,48 @@ class AdminSaleProcessCreateSerializer(serializers.Serializer):
 class AdminSaleProcessStatusSerializer(serializers.Serializer):
     status = serializers.ChoiceField(choices=SaleProcess.Status.choices)
     notes = serializers.CharField(required=False, allow_blank=True, default='')
+
+
+# ── Seller Leads ──────────────────────────────────────────────────────────────
+
+from ..models import SellerLead  # noqa: E402 — avoid circular at top level
+
+
+class AdminSellerLeadListSerializer(serializers.ModelSerializer):
+    assigned_agent = serializers.SerializerMethodField()
+
+    class Meta:
+        model = SellerLead
+        fields = [
+            'id', 'full_name', 'email', 'phone',
+            'property_type', 'location', 'expected_price',
+            'status', 'assigned_agent', 'created_at',
+        ]
+
+    def get_assigned_agent(self, obj):
+        if not obj.assigned_agent_membership_id:
+            return None
+        user = obj.assigned_agent_membership.user
+        profile = getattr(obj.assigned_agent_membership, 'agent_profile', None)
+        return {
+            'id': profile.pk if profile else None,
+            'name': user.get_full_name() or user.email,
+        }
+
+
+class AdminSellerLeadDetailSerializer(AdminSellerLeadListSerializer):
+    class Meta(AdminSellerLeadListSerializer.Meta):
+        fields = AdminSellerLeadListSerializer.Meta.fields + [
+            'square_meters', 'bedrooms', 'bathrooms', 'notes', 'updated_at',
+        ]
+
+
+class AdminSellerLeadUpdateSerializer(serializers.Serializer):
+    status = serializers.ChoiceField(choices=SellerLead.Status.choices, required=False)
+    assigned_agent_membership_id = serializers.IntegerField(required=False, allow_null=True)
+    notes = serializers.CharField(required=False, allow_blank=True)
+
+
+class AdminSellerLeadConvertSerializer(serializers.Serializer):
+    agent_membership_id = serializers.IntegerField()
+    notes = serializers.CharField(required=False, allow_blank=True, default='')

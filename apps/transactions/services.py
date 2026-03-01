@@ -78,3 +78,61 @@ def update_sale_process_status(process, new_status, notes, changed_by_membership
         process.property.save(update_fields=['listing_type', 'status'])
 
     return process
+
+
+@transaction.atomic
+def convert_seller_lead(lead, agent_membership):
+    """
+    Converts a SellerLead into a Property + SaleProcess atomically.
+    - Finds or creates User by lead.email, with role=client in the tenant.
+    - Creates Property with listing_type=pending_listing, status=documentacion.
+    - Creates SaleProcess with status=contacto_inicial.
+    - Updates lead.status=converted.
+    Returns (property, sale_process).
+    """
+    from apps.users.models import User, TenantMembership
+    from apps.properties.models import Property
+
+    # 1. Find or create the user
+    user, _ = User.objects.get_or_create(
+        email=lead.email,
+        defaults={'first_name': lead.full_name.split()[0] if lead.full_name else '',
+                  'last_name': ' '.join(lead.full_name.split()[1:]) if lead.full_name else '',
+                  'phone': lead.phone or None},
+    )
+
+    # 2. Find or create client membership in tenant
+    client_membership, _ = TenantMembership.objects.get_or_create(
+        user=user,
+        tenant=lead.tenant,
+        defaults={'role': TenantMembership.Role.CLIENT, 'is_active': True},
+    )
+    if client_membership.role != TenantMembership.Role.CLIENT:
+        # Exists with different role — still use it
+        pass
+
+    # 3. Create Property (minimal, pending listing)
+    prop = Property.objects.create(
+        tenant=lead.tenant,
+        title=f'Propiedad de {lead.full_name}',
+        listing_type='pending_listing',
+        status='documentacion',
+        property_type=lead.property_type,
+        price=lead.expected_price or 0,
+    )
+
+    # 4. Create SaleProcess
+    sale_process = SaleProcess.objects.create(
+        tenant=lead.tenant,
+        property=prop,
+        client_membership=client_membership,
+        agent_membership=agent_membership,
+        status=SaleProcess.Status.CONTACTO_INICIAL,
+        notes=f'Convertido desde seller lead #{lead.pk}',
+    )
+
+    # 5. Update lead
+    lead.status = 'converted'
+    lead.save(update_fields=['status', 'updated_at'])
+
+    return prop, sale_process

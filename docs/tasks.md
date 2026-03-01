@@ -1003,7 +1003,7 @@ avaluo=44%, credito=56%, docs_finales=67%, escrituras=78%, cerrado=100%
 
 ---
 
-### T-061 — Implementar GET, GET/{id} y PATCH /admin/seller-leads
+### [x] T-061 — Implementar GET, GET/{id} y PATCH /admin/seller-leads
 
 **Descripción:** Listado con filtros, detalle y actualización de seller leads (cambiar status, asignar agente, agregar notas).
 
@@ -1018,7 +1018,7 @@ avaluo=44%, credito=56%, docs_finales=67%, escrituras=78%, cerrado=100%
 
 ---
 
-### T-062 — Implementar POST /admin/seller-leads/{id}/convert
+### [x] T-062 — Implementar POST /admin/seller-leads/{id}/convert
 
 **Descripción:** Convertir seller lead en propiedad + sale_process en una transacción atómica. Flujo: crear/encontrar usuario client → crear Property (pending_listing/documentacion) → crear SaleProcess (contacto_inicial) → actualizar lead a `converted`.
 
