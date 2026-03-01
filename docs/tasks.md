@@ -274,7 +274,7 @@
 
 ---
 
-### T-017 — Crear modelo User personalizado
+### [x] T-017 — Crear modelo User personalizado
 
 **Descripción:** Crear modelo `User` en `apps/users/models.py` extendiendo `AbstractBaseUser`. Campos: `email` (único), `first_name`, `last_name`, `phone`, `avatar`, `city`, `auth_provider`, `is_active`, `is_staff`, `date_joined`, `last_login`. El email es el campo de autenticación (`USERNAME_FIELD = 'email'`).
 
