@@ -9,6 +9,13 @@ class Tenant(models.Model):
     phone = models.CharField(max_length=50, blank=True, null=True)
     website = models.CharField(max_length=500, blank=True, null=True)
     address = models.TextField(blank=True, null=True)
+    city = models.ForeignKey(
+        'locations.City',
+        on_delete=models.SET_NULL,
+        null=True,
+        blank=True,
+        related_name='tenants'
+    )
     is_active = models.BooleanField(default=True)
     created_at = models.DateTimeField(auto_now_add=True)
     updated_at = models.DateTimeField(auto_now=True)

@@ -252,7 +252,7 @@
 
 ---
 
-### T-016 — Crear modelo Tenant y fixture inicial
+### [x] T-016 — Crear modelo Tenant y fixture inicial
 
 **Descripción:** Crear la app `apps/tenants` con el modelo `Tenant` según el schema. Crear fixture con el tenant inicial: Altas Montañas (`slug: altas-montanas`).
 
