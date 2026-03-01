@@ -601,7 +601,7 @@
 
 ---
 
-### T-037 — Crear modelo SellerLead
+### [x] T-037 — Crear modelo SellerLead
 
 **Descripción:** Crear `SellerLead` con todos los campos del schema y el enum `seller_lead_status_enum`.
 
@@ -614,7 +614,7 @@
 
 ---
 
-### T-038 — Migrations de Transactions
+### [x] T-038 — Migrations de Transactions
 
 **Descripción:** Crear y aplicar todas las migraciones de la app transactions.
 
@@ -627,7 +627,7 @@
 
 ---
 
-### T-039 — Implementar POST /public/seller-leads
+### [x] T-039 — Implementar POST /public/seller-leads
 
 **Descripción:** Endpoint público para captar vendedores desde `/vender`. Crea un `SellerLead` con `status=new` vinculado al tenant por defecto (Altas Montañas).
 

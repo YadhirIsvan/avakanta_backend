@@ -108,3 +108,39 @@ class ProcessStatusHistory(models.Model):
 
     def __str__(self):
         return f'{self.process_type}:{self.process_id} → {self.new_status}'
+
+
+class SellerLead(models.Model):
+    class Status(models.TextChoices):
+        NEW = 'new', 'Nuevo'
+        CONTACTED = 'contacted', 'Contactado'
+        IN_REVIEW = 'in_review', 'En revisión'
+        CONVERTED = 'converted', 'Convertido'
+        REJECTED = 'rejected', 'Rechazado'
+
+    tenant = models.ForeignKey(
+        'tenants.Tenant', on_delete=models.CASCADE, related_name='seller_leads'
+    )
+    full_name = models.CharField(max_length=255)
+    email = models.CharField(max_length=255)
+    phone = models.CharField(max_length=50)
+    property_type = models.CharField(max_length=20)
+    location = models.CharField(max_length=255, blank=True)
+    square_meters = models.DecimalField(max_digits=10, decimal_places=2, null=True, blank=True)
+    bedrooms = models.IntegerField(null=True, blank=True)
+    bathrooms = models.IntegerField(null=True, blank=True)
+    expected_price = models.DecimalField(max_digits=14, decimal_places=2, null=True, blank=True)
+    status = models.CharField(max_length=15, choices=Status.choices, default=Status.NEW)
+    assigned_agent_membership = models.ForeignKey(
+        'users.TenantMembership', on_delete=models.SET_NULL,
+        null=True, blank=True, related_name='assigned_seller_leads'
+    )
+    notes = models.TextField(blank=True)
+    created_at = models.DateTimeField(auto_now_add=True)
+    updated_at = models.DateTimeField(auto_now=True)
+
+    class Meta:
+        db_table = 'seller_leads'
+
+    def __str__(self):
+        return f'SellerLead({self.pk}) — {self.full_name}'
