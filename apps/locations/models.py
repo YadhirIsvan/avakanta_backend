@@ -50,3 +50,17 @@ class City(models.Model):
 
     def __str__(self):
         return f'{self.name}, {self.state.name}'
+
+
+class Amenity(models.Model):
+    name = models.CharField(max_length=100, unique=True)
+    icon = models.CharField(max_length=50, blank=True, null=True)
+
+    class Meta:
+        db_table = 'amenities'
+        verbose_name = 'Amenity'
+        verbose_name_plural = 'Amenities'
+        ordering = ['name']
+
+    def __str__(self):
+        return self.name

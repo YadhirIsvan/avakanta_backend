@@ -230,7 +230,7 @@
 
 ---
 
-### T-015 — Serializers y endpoints de catálogos
+### [x] T-015 — Serializers y endpoints de catálogos
 
 **Descripción:** Crear serializers para Country, State, City y Amenity. Implementar los endpoints `GET /catalogs/countries`, `GET /catalogs/states?country_id=`, `GET /catalogs/cities?state_id=`, `GET /catalogs/amenities` (ver spec sección 10).
 
