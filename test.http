@@ -1,0 +1,191 @@
+# Avakanta API — Test Requests
+# Extensión requerida: REST Client (Huachao Mao) en VS Code
+# Cada bloque tiene un botón "Send Request" arriba — click y listo
+
+@base = http://127.0.0.1:8000/api/v1
+@email = admin@avakanta.com
+
+# ── Reemplaza este valor después de hacer verify ──────────────────────────────
+@token = PEGA_AQUI_EL_ACCESS_TOKEN
+
+
+# ==============================================================================
+# AUTH
+# ==============================================================================
+
+### 1. Pedir OTP (el código aparece en la terminal del servidor)
+POST {{base}}/auth/email/otp
+Content-Type: application/json
+
+{
+  "email": "{{email}}"
+}
+
+###
+
+### 2. Verificar OTP → obtienes el JWT
+POST {{base}}/auth/email/verify
+Content-Type: application/json
+
+{
+  "email": "{{email}}",
+  "token": "PEGA_AQUI_EL_CODIGO_OTP"
+}
+
+###
+
+### 3. Registro de nuevo usuario
+POST {{base}}/auth/register
+Content-Type: application/json
+
+{
+  "email": "nuevo@test.com",
+  "first_name": "Juan",
+  "last_name": "Pérez",
+  "phone": "+52 272 100 0000"
+}
+
+###
+
+### 4. Logout
+POST {{base}}/auth/logout
+Content-Type: application/json
+Authorization: Bearer {{token}}
+
+{
+  "refresh": "PEGA_AQUI_EL_REFRESH_TOKEN"
+}
+
+
+# ==============================================================================
+# PROPIEDADES (Admin)
+# ==============================================================================
+
+### 5. Listar propiedades
+GET {{base}}/admin/properties
+Authorization: Bearer {{token}}
+
+###
+
+### 6. Crear propiedad
+POST {{base}}/admin/properties
+Content-Type: application/json
+Authorization: Bearer {{token}}
+
+{
+  "title": "Casa de prueba",
+  "listing_type": "sale",
+  "status": "disponible",
+  "property_type": "house",
+  "price": "1500000.00",
+  "address_street": "Calle Reforma 123",
+  "address_neighborhood": "Centro",
+  "bedrooms": 3,
+  "bathrooms": 2,
+  "area_m2": "120.00"
+}
+
+###
+
+### 7. Detalle de propiedad
+GET {{base}}/admin/properties/1
+Authorization: Bearer {{token}}
+
+
+# ==============================================================================
+# AGENTES (Admin)
+# ==============================================================================
+
+### 8. Listar agentes
+GET {{base}}/admin/agents
+Authorization: Bearer {{token}}
+
+###
+
+### 9. Crear agente
+POST {{base}}/admin/agents
+Content-Type: application/json
+Authorization: Bearer {{token}}
+
+{
+  "email": "agente@test.com",
+  "first_name": "Carlos",
+  "last_name": "López"
+}
+
+
+# ==============================================================================
+# PIPELINE DE COMPRA (Admin)
+# ==============================================================================
+
+### 10. Listar procesos de compra
+GET {{base}}/admin/purchase-processes
+Authorization: Bearer {{token}}
+
+###
+
+### 11. Cambiar estado de proceso
+PATCH {{base}}/admin/purchase-processes/1/status
+Content-Type: application/json
+Authorization: Bearer {{token}}
+
+{
+  "status": "visita",
+  "notes": "Primera visita agendada"
+}
+
+
+# ==============================================================================
+# NOTIFICACIONES
+# ==============================================================================
+
+### 12. Listar notificaciones
+GET {{base}}/notifications/
+Authorization: Bearer {{token}}
+
+###
+
+### 13. Marcar todas como leídas
+POST {{base}}/notifications/read-all
+Authorization: Bearer {{token}}
+
+
+# ==============================================================================
+# PANEL CLIENTE
+# ==============================================================================
+
+### 14. Perfil del cliente
+GET {{base}}/client/profile
+Authorization: Bearer {{token}}
+
+###
+
+### 15. Actualizar perfil
+PATCH {{base}}/client/profile
+Content-Type: application/json
+Authorization: Bearer {{token}}
+
+{
+  "first_name": "Juan",
+  "last_name": "Pérez",
+  "phone": "+52 272 100 0000"
+}
+
+###
+
+### 16. Preferencias de notificaciones
+GET {{base}}/client/notification-preferences
+Authorization: Bearer {{token}}
+
+
+# ==============================================================================
+# PROPIEDADES PÚBLICAS
+# ==============================================================================
+
+### 17. Listar propiedades públicas
+GET {{base}}/public/properties
+
+###
+
+### 18. Detalle de propiedad pública
+GET {{base}}/public/properties/1

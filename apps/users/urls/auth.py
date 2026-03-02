@@ -6,9 +6,11 @@ from ..views.auth import (
     LogoutView,
     GoogleLoginView,
     AppleLoginView,
+    RegisterView,
 )
 
 urlpatterns = [
+    path('register', RegisterView.as_view(), name='auth-register'),
     path('email/otp', OTPRequestView.as_view(), name='auth-email-otp'),
     path('email/verify', OTPVerifyView.as_view(), name='auth-email-verify'),
     path('refresh', TokenRefreshView.as_view(), name='auth-refresh'),

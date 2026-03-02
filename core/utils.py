@@ -19,17 +19,15 @@ def generate_matricula(tenant_id):
 
         year = date.today().year
         prefix = f'CLI-{year}-'
-        last = (
+        # Filtra solo matrículas con sufijo numérico para evitar errores con
+        # valores de test o formatos inesperados (e.g. CLI-2026-TEST).
+        matriculas = (
             Appointment.objects
-            .filter(tenant_id=tenant_id, matricula__startswith=prefix)
-            .order_by('-matricula')
+            .filter(tenant_id=tenant_id, matricula__regex=rf'^CLI-{year}-\d+$')
             .values_list('matricula', flat=True)
-            .first()
         )
-        if last:
-            next_num = int(last.split('-')[2]) + 1
-        else:
-            next_num = 1
+        nums = [int(m[len(prefix):]) for m in matriculas]
+        next_num = max(nums) + 1 if nums else 1
 
         return f'{prefix}{str(next_num).zfill(3)}'
 

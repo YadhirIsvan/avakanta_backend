@@ -122,6 +122,46 @@ Base: `/api/v1/auth`
 
 ---
 
+#### `POST /auth/register`
+
+Registra un nuevo usuario, crea su membresía como cliente en el tenant default y envía OTP automáticamente.
+
+**Permisos:** Público (AllowAny)
+
+**Request:**
+```json
+{
+  "email": "usuario@ejemplo.com",
+  "first_name": "Juan",
+  "last_name": "Pérez",
+  "phone": "+52 272 100 0000"
+}
+```
+
+**Response 201:**
+```json
+{
+  "message": "Usuario creado. OTP enviado al email.",
+  "email": "usuario@ejemplo.com"
+}
+```
+
+**Response 400:**
+```json
+{
+  "error": "El usuario ya existe, usa login"
+}
+```
+
+**Reglas:**
+- Si el usuario ya existe (mismo email), retornar 400
+- Crear usuario con `is_active=true` y los datos proporcionados
+- Crear `TenantMembership` con `role=client` en el tenant activo default
+- Enviar OTP al email automáticamente (misma lógica que `/auth/email/otp`)
+- `phone` es opcional
+
+---
+
 #### `POST /auth/email/otp`
 
 Envía código OTP de 6 dígitos al email.
@@ -139,9 +179,13 @@ Envía código OTP de 6 dígitos al email.
 ```json
 {
   "message": "OTP enviado al email",
-  "email": "usuario@ejemplo.com"
+  "email": "usuario@ejemplo.com",
+  "is_new_user": true
 }
 ```
+
+> `is_new_user: true` → el email no existía en la BD (primer acceso, mostrar formulario de registro con nombre/teléfono en el paso verify)
+> `is_new_user: false` → el email ya existe (login, mostrar solo el campo de código OTP)
 
 **Response 429:**
 ```json
@@ -168,9 +212,16 @@ Verifica el código OTP y retorna tokens JWT.
 ```json
 {
   "email": "usuario@ejemplo.com",
-  "token": "123456"
+  "token": "123456",
+  "first_name": "Juan",
+  "last_name": "Pérez",
+  "phone": "+52 272 100 0000"
 }
 ```
+
+> `first_name`, `last_name`, `phone` son **opcionales**.
+> - Si `is_new_user` fue `true` → enviarlos para completar el perfil.
+> - Si `is_new_user` fue `false` (login) → omitirlos, no se sobreescriben datos existentes.
 
 **Response 200:**
 ```json
@@ -182,6 +233,7 @@ Verifica el código OTP y retorna tokens JWT.
     "email": "usuario@ejemplo.com",
     "first_name": "Juan",
     "last_name": "Pérez",
+    "phone": "+52 272 100 0000",
     "memberships": [
       {
         "id": 1,
@@ -205,6 +257,7 @@ Verifica el código OTP y retorna tokens JWT.
 **Reglas:**
 - Validar código contra hash almacenado
 - Si el código es correcto, eliminar el OTP
+- Si se envían `first_name`, `last_name` o `phone`, actualizar el perfil del usuario
 - Si el usuario no tiene membresía en ningún tenant, crear una como `client` en el tenant default
 - Retornar todas las membresías activas del usuario
 

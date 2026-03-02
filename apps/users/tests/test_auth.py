@@ -10,6 +10,7 @@ from apps.users.models import User, OTPCode
 from apps.users.otp import create_otp, hash_otp, OTP_RATE_LIMIT
 
 
+REGISTER_URL = '/api/v1/auth/register'
 OTP_REQUEST_URL = '/api/v1/auth/email/otp'
 OTP_VERIFY_URL = '/api/v1/auth/email/verify'
 LOGOUT_URL = '/api/v1/auth/logout'
@@ -125,3 +126,91 @@ class OTPAuthTestCase(APITestCase):
         self.client.credentials(HTTP_AUTHORIZATION=f'Bearer {refresh.access_token}')
         resp = self.client.post(LOGOUT_URL, {}, format='json')
         self.assertEqual(resp.status_code, 400)
+
+    # ── Register ──────────────────────────────────────────────────────────────
+
+    def test_register_new_user_returns_201(self):
+        """Registrar un usuario nuevo retorna 201 con message y email."""
+        resp = self.client.post(REGISTER_URL, {
+            'email': 'nuevo@test.com',
+            'first_name': 'Ana',
+            'last_name': 'García',
+            'phone': '+52 272 100 0000',
+        }, format='json')
+        self.assertEqual(resp.status_code, 201)
+        self.assertIn('message', resp.data)
+        self.assertEqual(resp.data['email'], 'nuevo@test.com')
+
+    def test_register_creates_user_in_db(self):
+        """El usuario queda creado en la base de datos."""
+        self.client.post(REGISTER_URL, {
+            'email': 'newuser@test.com',
+            'first_name': 'Carlos',
+            'last_name': 'López',
+        }, format='json')
+        self.assertTrue(User.objects.filter(email='newuser@test.com').exists())
+
+    def test_register_saves_first_and_last_name(self):
+        """first_name y last_name se persisten correctamente."""
+        self.client.post(REGISTER_URL, {
+            'email': 'named@test.com',
+            'first_name': 'María',
+            'last_name': 'Hernández',
+        }, format='json')
+        user = User.objects.get(email='named@test.com')
+        self.assertEqual(user.first_name, 'María')
+        self.assertEqual(user.last_name, 'Hernández')
+
+    def test_register_creates_client_membership(self):
+        """Se crea TenantMembership con role=client en el tenant default."""
+        from apps.users.models import TenantMembership
+        resp = self.client.post(REGISTER_URL, {
+            'email': 'membership@test.com',
+            'first_name': 'Pedro',
+            'last_name': 'Ruiz',
+        }, format='json')
+        self.assertEqual(resp.status_code, 201)
+        user = User.objects.get(email='membership@test.com')
+        membership = TenantMembership.objects.filter(user=user).first()
+        self.assertIsNotNone(membership)
+        self.assertEqual(membership.tenant, self.tenant)
+        self.assertEqual(membership.role, TenantMembership.Role.CLIENT)
+
+    def test_register_existing_user_returns_400(self):
+        """Registrar un email ya existente retorna 400."""
+        User.objects.create(email='existing@test.com', is_active=True)
+        resp = self.client.post(REGISTER_URL, {
+            'email': 'existing@test.com',
+            'first_name': 'X',
+            'last_name': 'Y',
+        }, format='json')
+        self.assertEqual(resp.status_code, 400)
+        self.assertIn('El usuario ya existe', resp.data['error'])
+
+    def test_register_without_required_fields_returns_400(self):
+        """Omitir first_name o last_name retorna 400."""
+        resp = self.client.post(REGISTER_URL, {
+            'email': 'incomplete@test.com',
+        }, format='json')
+        self.assertEqual(resp.status_code, 400)
+
+    def test_register_sends_otp_email(self):
+        """Se envía un OTP al email tras el registro."""
+        from django.core import mail
+        resp = self.client.post(REGISTER_URL, {
+            'email': 'otp_check@test.com',
+            'first_name': 'Lucía',
+            'last_name': 'Martínez',
+        }, format='json')
+        self.assertEqual(resp.status_code, 201)
+        self.assertEqual(len(mail.outbox), 1)
+        self.assertIn('otp_check@test.com', mail.outbox[0].to)
+
+    def test_register_phone_is_optional(self):
+        """El campo phone no es requerido."""
+        resp = self.client.post(REGISTER_URL, {
+            'email': 'nophone@test.com',
+            'first_name': 'Sin',
+            'last_name': 'Teléfono',
+        }, format='json')
+        self.assertEqual(resp.status_code, 201)

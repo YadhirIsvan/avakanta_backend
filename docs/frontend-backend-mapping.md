@@ -134,12 +134,72 @@ localStorage.removeItem("refresh_token");
 
 | Archivo | Tipo de cambio |
 |---|---|
-| `src/auth/api/auth.api.ts` | Agregar body a `logout` y `refreshToken` |
-| `src/auth/types/auth.types.ts` | Agregar tipos completos de respuesta |
+| `src/auth/api/auth.api.ts` | Agregar `register`, body a `logout` y `refreshToken` |
+| `src/auth/types/auth.types.ts` | Agregar `RegisterRequest`, `RegisterResponse` y tipos completos de respuesta |
+| `src/auth/actions/register.actions.ts` | **Crear nuevo** — manejador del formulario de registro |
 | `src/auth/actions/send-email-otp.actions.ts` | Parsear respuesta real del back |
 | `src/auth/actions/verify-otp.actions.ts` | Parsear respuesta real + guardar tokens |
 
 ### 1.2 Endpoints
+
+#### `register` ← **NUEVO**
+```
+POST /auth/register
+```
+**Permisos:** Público (AllowAny)
+
+**Archivo del front a tocar:** `src/auth/api/auth.api.ts` + `src/auth/actions/register.actions.ts` (crear)
+
+**Request body:**
+```json
+{
+  "email": "usuario@ejemplo.com",
+  "first_name": "Juan",
+  "last_name": "Pérez",
+  "phone": "+52 272 100 0000"
+}
+```
+> `phone` es opcional. Todos los demás campos son requeridos.
+
+**Response 201:**
+```json
+{
+  "message": "Usuario creado. OTP enviado al email.",
+  "email": "usuario@ejemplo.com"
+}
+```
+
+**Response 400 — usuario ya existe:**
+```json
+{ "error": "El usuario ya existe, usa login" }
+```
+
+**Response 400 — campos faltantes:**
+```json
+{ "first_name": ["This field is required."], "last_name": ["This field is required."] }
+```
+
+**Notas de implementación:**
+- El back crea el usuario, asigna `TenantMembership` con `role=client` en el tenant default **y envía el OTP automáticamente** en una sola llamada. El front **no necesita llamar a `/auth/email/otp` por separado** después del registro.
+- Tras recibir 201, redirigir al usuario a la pantalla de verificación OTP (`/auth/verify`) pasando el email como parámetro.
+- Si el back retorna 400 con `"El usuario ya existe, usa login"`, mostrar mensaje y redirigir al flujo de login (`/auth/email/otp`).
+- Los campos en el body deben estar en **snake_case** (`first_name`, `last_name`), no camelCase.
+
+**Ejemplo de implementación en `auth.api.ts`:**
+```typescript
+export const register = (data: RegisterRequest) =>
+  axiosInstance.post<RegisterResponse>("/auth/register", data);
+```
+
+**Flujo completo de registro:**
+```
+[Formulario Registro] → POST /auth/register → 201
+  → redirigir a /auth/verify?email=...
+  → [Formulario OTP] → POST /auth/email/verify → 200 + tokens
+  → guardar tokens → redirigir a dashboard según role
+```
+
+---
 
 #### `sendEmailOtp`
 ```
@@ -151,8 +211,16 @@ POST /auth/email/otp
 ```
 **Response 200:**
 ```json
-{ "message": "OTP enviado al email", "email": "usuario@ejemplo.com" }
+{
+  "message": "OTP enviado al email",
+  "email": "usuario@ejemplo.com",
+  "is_new_user": true
+}
 ```
+> Usar `is_new_user` para decidir qué formulario mostrar en el paso verify:
+> - `true` → mostrar campos nombre, apellido y teléfono (registro)
+> - `false` → mostrar solo el campo de código OTP (login)
+
 **Response 429:** `{ "error": "Demasiados intentos. Intenta en 60 segundos." }`
 
 ---
@@ -163,8 +231,16 @@ POST /auth/email/verify
 ```
 **Request body:**
 ```json
-{ "email": "usuario@ejemplo.com", "token": "123456" }
+{
+  "email": "usuario@ejemplo.com",
+  "token": "123456",
+  "first_name": "Juan",
+  "last_name": "Pérez",
+  "phone": "+52 272 100 0000"
+}
 ```
+> `first_name`, `last_name`, `phone` son opcionales. Enviarlos solo si `is_new_user` fue `true`.
+
 **Response 200:**
 ```json
 {
@@ -175,6 +251,7 @@ POST /auth/email/verify
     "email": "usuario@ejemplo.com",
     "first_name": "Juan",
     "last_name": "Pérez",
+    "phone": "+52 272 100 0000",
     "memberships": [
       { "id": 1, "tenant_id": 1, "tenant_name": "Altas Montañas", "tenant_slug": "altas-montanas", "role": "client" }
     ]
@@ -223,19 +300,58 @@ POST /auth/logout
 
 ### 1.3 Mapeo de campos
 
+| Front (`SendOtpResponse`) | Back (`/auth/email/otp` response) | Acción |
+|---|---|---|
+| `isNewUser` | `is_new_user` | Renombrar a camelCase |
+| `email` | `email` | Igual |
+
 | Front (`VerifyOtpResponse`) | Back (`/auth/email/verify` response) | Acción |
 |---|---|---|
 | `accessToken` | `access` | Renombrar campo |
 | — | `refresh` | Agregar al tipo |
-| — | `user.id`, `user.email`, `user.first_name`, `user.last_name` | Agregar al tipo |
+| — | `user.id`, `user.email`, `user.first_name`, `user.last_name`, `user.phone` | Agregar al tipo |
 | — | `user.memberships[].role` | Leer para determinar redirección |
 | `success` | — | Campo local, no viene del back |
 
 ### 1.4 Tipos TypeScript a agregar en `auth/types/auth.types.ts`
 
 ```typescript
-export type UserRole = "client" | "agent" | "admin"; // cambiar de "cliente"/"agente"/"admin" a inglés
+export type UserRole = "client" | "agent" | "admin";
 
+// ── OTP Request ───────────────────────────────────────────────────────────────
+export interface SendOtpRequest {
+  email: string;
+}
+
+export interface SendOtpResponse {
+  message: string;
+  email: string;
+  is_new_user: boolean;  // true = registro, false = login
+}
+
+// ── OTP Verify ────────────────────────────────────────────────────────────────
+export interface VerifyOtpRequest {
+  email: string;
+  token: string;
+  first_name?: string;   // solo si is_new_user fue true
+  last_name?: string;    // solo si is_new_user fue true
+  phone?: string;        // solo si is_new_user fue true
+}
+
+// ── Register ──────────────────────────────────────────────────────────────────
+export interface RegisterRequest {
+  email: string;
+  first_name: string;
+  last_name: string;
+  phone?: string;
+}
+
+export interface RegisterResponse {
+  message: string;
+  email: string;
+}
+
+// ── Auth User / Tokens ────────────────────────────────────────────────────────
 export interface AuthMembership {
   id: number;
   tenant_id: number;
@@ -249,6 +365,7 @@ export interface AuthUser {
   email: string;
   first_name: string;
   last_name: string;
+  phone: string | null;
   memberships: AuthMembership[];
 }
 
