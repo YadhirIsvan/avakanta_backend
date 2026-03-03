@@ -3,10 +3,68 @@ from rest_framework import serializers
 from ..models import Property, PropertyImage, PropertyAmenity, PropertyNearbyPlace, PropertyDocument, PropertyAssignment
 
 
+def build_absolute_url(image_url, request=None):
+    """Convert relative URLs to absolute URLs for media files."""
+    if not image_url:
+        return None
+    if image_url.startswith('http'):
+        return image_url
+    # Construct absolute URL from relative path
+    if request:
+        base_url = f"{request.scheme}://{request.get_host()}"
+    else:
+        from django.conf import settings
+        base_url = getattr(settings, 'SITE_URL', 'http://localhost:8000')
+    return f"{base_url}{image_url}"
+
+
+def extract_youtube_id(url_or_id):
+    """Extract YouTube video ID from URL or return ID if already extracted."""
+    if not url_or_id:
+        return None
+
+    import re
+
+    # If it's already a short ID format (11 chars of alphanumeric, dash, underscore)
+    if re.match(r'^[a-zA-Z0-9_-]{11}$', url_or_id):
+        return url_or_id
+
+    # Try to extract from various YouTube URL formats
+    patterns = [
+        r'(?:youtube\.com/watch\?v=|youtu\.be/)([a-zA-Z0-9_-]{11})',
+        r'youtube\.com/embed/([a-zA-Z0-9_-]{11})',
+        r'youtube\.com/v/([a-zA-Z0-9_-]{11})',
+    ]
+
+    for pattern in patterns:
+        match = re.search(pattern, url_or_id)
+        if match:
+            return match.group(1)
+
+    # Try to extract from query parameter
+    try:
+        from urllib.parse import urlparse, parse_qs
+        parsed = urlparse(url_or_id)
+        video_id = parse_qs(parsed.query).get('v')
+        if video_id and re.match(r'^[a-zA-Z0-9_-]{11}$', video_id[0]):
+            return video_id[0]
+    except:
+        pass
+
+    # Return as-is if no patterns match
+    return url_or_id
+
+
 class AdminPropertyImageSerializer(serializers.ModelSerializer):
+    image_url = serializers.SerializerMethodField()
+
     class Meta:
         model = PropertyImage
         fields = ['id', 'image_url', 'is_cover', 'sort_order']
+
+    def get_image_url(self, obj):
+        request = self.context.get('request')
+        return build_absolute_url(obj.image_url, request)
 
 
 class AdminPropertyAmenitySerializer(serializers.Serializer):
@@ -73,8 +131,9 @@ class AdminPropertyListSerializer(serializers.ModelSerializer):
         return ', '.join(parts) if parts else ''
 
     def get_image(self, obj):
+        request = self.context.get('request')
         cover = obj.images.filter(is_cover=True).first() or obj.images.first()
-        return cover.image_url if cover else None
+        return build_absolute_url(cover.image_url, request) if cover else None
 
     def get_agent(self, obj):
         assignment = obj.assignments.filter(is_visible=True).select_related(
@@ -177,6 +236,12 @@ class AdminPropertyCreateUpdateSerializer(serializers.ModelSerializer):
                 PropertyAmenity.objects.create(property=property_instance, amenity=amenity)
             except Amenity.DoesNotExist:
                 pass
+
+    def validate_video_id(self, value):
+        """Extract YouTube video ID from URL if needed."""
+        if value:
+            return extract_youtube_id(value)
+        return value
 
     def create(self, validated_data):
         amenity_ids = validated_data.pop('amenity_ids', [])

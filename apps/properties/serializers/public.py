@@ -1,12 +1,33 @@
 from datetime import date
 from rest_framework import serializers
+from django.conf import settings
 from ..models import Property, PropertyImage, PropertyAmenity, PropertyNearbyPlace
 
 
+def build_absolute_url(image_url, request=None):
+    """Convert relative URLs to absolute URLs for media files."""
+    if not image_url:
+        return None
+    if image_url.startswith('http'):
+        return image_url
+    # Construct absolute URL from relative path
+    if request:
+        base_url = f"{request.scheme}://{request.get_host()}"
+    else:
+        base_url = getattr(settings, 'SITE_URL', 'http://localhost:8000')
+    return f"{base_url}{image_url}"
+
+
 class PropertyImageSerializer(serializers.ModelSerializer):
+    image_url = serializers.SerializerMethodField()
+
     class Meta:
         model = PropertyImage
         fields = ['id', 'image_url', 'is_cover', 'sort_order']
+
+    def get_image_url(self, obj):
+        request = self.context.get('request')
+        return build_absolute_url(obj.image_url, request)
 
 
 class PropertyAmenitySerializer(serializers.Serializer):
@@ -53,8 +74,9 @@ class PublicPropertyListSerializer(serializers.ModelSerializer):
         return ', '.join(parts) if parts else ''
 
     def get_image(self, obj):
+        request = self.context.get('request')
         cover = obj.images.filter(is_cover=True).first()
-        return cover.image_url if cover else None
+        return build_absolute_url(cover.image_url, request) if cover else None
 
     def get_days_listed(self, obj):
         return (date.today() - obj.created_at.date()).days
@@ -75,6 +97,7 @@ class PublicPropertyDetailSerializer(serializers.ModelSerializer):
     nearby_places = PropertyNearbyPlaceSerializer(many=True, read_only=True)
     agent = serializers.SerializerMethodField()
     coordinates = serializers.SerializerMethodField()
+    video_thumbnail = serializers.SerializerMethodField()
 
     class Meta:
         model = Property
@@ -118,6 +141,7 @@ class PublicPropertyDetailSerializer(serializers.ModelSerializer):
         return PropertyAmenitySerializer(qs, many=True).data
 
     def get_agent(self, obj):
+        request = self.context.get('request')
         assignment = obj.assignments.filter(
             is_visible=True
         ).select_related(
@@ -128,10 +152,14 @@ class PublicPropertyDetailSerializer(serializers.ModelSerializer):
         user = assignment.agent_membership.user
         return {
             'name': user.get_full_name() or user.email,
-            'photo': user.avatar,
+            'photo': build_absolute_url(user.avatar, request),
             'phone': user.phone,
             'email': user.email,
         }
+
+    def get_video_thumbnail(self, obj):
+        request = self.context.get('request')
+        return build_absolute_url(obj.video_thumbnail, request)
 
     def get_coordinates(self, obj):
         if obj.latitude is None or obj.longitude is None:
