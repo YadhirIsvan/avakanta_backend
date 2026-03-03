@@ -73,13 +73,13 @@ class AdminPropertyListSerializer(serializers.ModelSerializer):
         return ', '.join(parts) if parts else ''
 
     def get_image(self, obj):
-        cover = obj.images.filter(is_cover=True).first()
+        cover = obj.images.filter(is_cover=True).first() or obj.images.first()
         return cover.image_url if cover else None
 
     def get_agent(self, obj):
         assignment = obj.assignments.filter(is_visible=True).select_related(
             'agent_membership__user'
-        ).first()
+        ).order_by('-assigned_at').first()
         if not assignment:
             return None
         user = assignment.agent_membership.user
@@ -94,6 +94,7 @@ class AdminPropertyListSerializer(serializers.ModelSerializer):
 
 class AdminPropertyDetailSerializer(serializers.ModelSerializer):
     address = serializers.SerializerMethodField()
+    city = serializers.SerializerMethodField()
     images = AdminPropertyImageSerializer(many=True, read_only=True)
     amenities = serializers.SerializerMethodField()
     nearby_places = AdminPropertyNearbyPlaceSerializer(many=True, read_only=True)
@@ -131,6 +132,15 @@ class AdminPropertyDetailSerializer(serializers.ModelSerializer):
             if obj.city.state:
                 parts.append(obj.city.state.code or obj.city.state.name)
         return ', '.join(parts) if parts else ''
+
+    def get_city(self, obj):
+        if not obj.city_id:
+            return None
+        return {
+            'id': obj.city.id,
+            'name': obj.city.name,
+            'state_id': obj.city.state_id,
+        }
 
     def get_amenities(self, obj):
         qs = obj.property_amenities.select_related('amenity').all()

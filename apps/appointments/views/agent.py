@@ -6,6 +6,7 @@ from core.pagination import StandardPagination
 from core.permissions import IsAgent
 from apps.users.models import TenantMembership
 from ..models import Appointment
+from ..services import sync_purchase_process_on_appointment
 from ..serializers.agent import (
     AgentAppointmentListSerializer,
     AgentAppointmentStatusSerializer,
@@ -77,5 +78,8 @@ class AgentAppointmentStatusView(APIView):
         if data.get('notes'):
             appointment.notes = data['notes']
         appointment.save(update_fields=['status', 'notes', 'updated_at'])
+
+        # Sync PurchaseProcess when status changes
+        sync_purchase_process_on_appointment(appointment, is_new=False)
 
         return Response(AgentAppointmentListSerializer(appointment).data)

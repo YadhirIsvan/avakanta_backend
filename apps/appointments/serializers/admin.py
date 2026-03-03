@@ -90,7 +90,8 @@ class AdminAppointmentListSerializer(serializers.ModelSerializer):
         model = Appointment
         fields = [
             'id', 'matricula', 'scheduled_date', 'scheduled_time', 'duration_minutes',
-            'status', 'client_name', 'client_email', 'client_phone',
+            'status', 'appointment_type',
+            'client_name', 'client_email', 'client_phone',
             'property', 'agent',
         ]
 
@@ -111,6 +112,11 @@ class AdminAppointmentCreateSerializer(serializers.Serializer):
     scheduled_date = serializers.DateField()
     scheduled_time = serializers.TimeField()
     duration_minutes = serializers.IntegerField(required=False, allow_null=True, default=None)
+    appointment_type = serializers.ChoiceField(
+        choices=Appointment.AppointmentType.choices,
+        default=Appointment.AppointmentType.PRIMERA_VISITA,
+        required=False,
+    )
     notes = serializers.CharField(required=False, allow_blank=True, default='')
 
 

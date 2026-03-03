@@ -111,32 +111,39 @@ class AdminAgentDetailView(APIView):
         return Response(AdminAgentDetailSerializer(agent).data)
 
     def patch(self, request, pk):
+        import uuid
+        from django.core.files.storage import default_storage
+
         agent = self._get_agent(request, pk)
         if not agent:
             return Response({'error': 'Agente no encontrado.'}, status=404)
 
-        # Updatable user fields
         user = agent.membership.user
-        user_fields = ('first_name', 'last_name', 'phone')
-        user_changed = False
-        for field in user_fields:
+        user_update_fields = []
+
+        for field in ('first_name', 'last_name', 'phone'):
             if field in request.data:
                 setattr(user, field, request.data[field])
-                user_changed = True
-        if user_changed:
-            user.save(update_fields=[f for f in user_fields if f in request.data])
+                user_update_fields.append(field)
 
-        # Updatable profile fields
-        profile_fields = ('zone', 'bio', 'score')
-        profile_changed = False
-        for field in profile_fields:
+        if 'avatar' in request.FILES:
+            avatar_file = request.FILES['avatar']
+            ext = avatar_file.name.rsplit('.', 1)[-1] if '.' in avatar_file.name else 'jpg'
+            path = default_storage.save(f'avatars/{uuid.uuid4()}.{ext}', avatar_file)
+            user.avatar = f'/media/{path}'
+            user_update_fields.append('avatar')
+
+        if user_update_fields:
+            user.save(update_fields=user_update_fields)
+
+        profile_update_fields = []
+        for field in ('zone', 'bio', 'score'):
             if field in request.data:
                 setattr(agent, field, request.data[field])
-                profile_changed = True
-        if profile_changed:
-            agent.save(update_fields=[f for f in profile_fields if f in request.data])
+                profile_update_fields.append(field)
+        if profile_update_fields:
+            agent.save(update_fields=profile_update_fields)
 
-        # Reload with annotations
         agent = self._get_agent(request, pk)
         return Response(AdminAgentDetailSerializer(agent).data)
 

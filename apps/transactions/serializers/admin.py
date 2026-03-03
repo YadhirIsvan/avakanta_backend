@@ -53,6 +53,7 @@ class AdminPurchaseProcessListSerializer(serializers.ModelSerializer):
             'id': obj.property_id,
             'title': obj.property.title,
             'image': _property_image(obj.property),
+            'price': str(obj.property.price) if obj.property.price else '',
         }
 
     def get_agent(self, obj):

@@ -118,6 +118,13 @@ class Appointment(models.Model):
         NO_SHOW = 'no_show', 'No show'
         REAGENDADA = 'reagendada', 'Reagendada'
 
+    class AppointmentType(models.TextChoices):
+        PRIMERA_VISITA   = 'primera_visita',   'Primera Visita'
+        SEGUIMIENTO      = 'seguimiento',      'Seguimiento'
+        CIERRE_CONTRATO  = 'cierre_contrato',  'Cierre de Contrato'
+        ENTREGA_LLAVES   = 'entrega_llaves',   'Entrega de Llaves'
+        AVALUO           = 'avaluo',           'Avalúo'
+
     tenant = models.ForeignKey(
         'tenants.Tenant', on_delete=models.CASCADE, related_name='appointments'
     )
@@ -140,6 +147,11 @@ class Appointment(models.Model):
     duration_minutes = models.PositiveIntegerField(null=True, blank=True)
     status = models.CharField(
         max_length=15, choices=Status.choices, default=Status.PROGRAMADA
+    )
+    appointment_type = models.CharField(
+        max_length=20,
+        choices=AppointmentType.choices,
+        default=AppointmentType.PRIMERA_VISITA,
     )
     notes = models.TextField(blank=True)
     cancellation_reason = models.TextField(blank=True)

@@ -20,7 +20,7 @@ from ..serializers.admin import (
     AdminAppointmentCreateSerializer,
     AdminAppointmentUpdateSerializer,
 )
-from ..services import AvailabilityService
+from ..services import AvailabilityService, sync_purchase_process_on_appointment
 
 
 def _get_agent_profile(pk, tenant):
@@ -298,8 +298,12 @@ class AdminAppointmentListCreateView(APIView):
             scheduled_date=data['scheduled_date'],
             scheduled_time=data['scheduled_time'],
             duration_minutes=data.get('duration_minutes'),
+            appointment_type=data.get('appointment_type', Appointment.AppointmentType.PRIMERA_VISITA),
             notes=data.get('notes', ''),
         )
+
+        # Auto-create PurchaseProcess if this is a primera_visita
+        sync_purchase_process_on_appointment(appointment, is_new=True)
 
         appt = _appointment_queryset(request.tenant).get(pk=appointment.pk)
         return Response(AdminAppointmentListSerializer(appt).data, status=201)
@@ -334,6 +338,7 @@ class AdminAppointmentDetailView(APIView):
                 return Response({'error': error}, status=400)
 
         update_fields = []
+        status_changed = 'status' in data
         for field in ('status', 'scheduled_date', 'scheduled_time',
                       'duration_minutes', 'notes', 'cancellation_reason'):
             if field in data:
@@ -342,6 +347,10 @@ class AdminAppointmentDetailView(APIView):
 
         if update_fields:
             appt.save(update_fields=update_fields)
+
+        # Sync PurchaseProcess when the appointment status changes
+        if status_changed:
+            sync_purchase_process_on_appointment(appt, is_new=False)
 
         appt = _appointment_queryset(request.tenant).get(pk=appt.pk)
         return Response(AdminAppointmentListSerializer(appt).data)

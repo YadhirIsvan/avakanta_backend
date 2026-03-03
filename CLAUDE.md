@@ -418,3 +418,6 @@ Estas reglas del PRD deben respetarse siempre. Si hay duda, releer `docs/prd.md`
 - ❌ Aceptar archivos sin validar mime type y tamaño
 - ❌ Retornar un JSON diferente al que está en `docs/spec.md`
 - ❌ Crear tablas o columnas que no están en `docs/schema.dbml`
+
+
+

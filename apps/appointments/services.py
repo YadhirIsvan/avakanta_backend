@@ -1,5 +1,6 @@
 from datetime import datetime, date, time, timedelta
 
+from django.db import transaction
 from django.db.models import Q
 from django.utils import timezone
 
@@ -186,3 +187,104 @@ class AvailabilityService:
             if slot < appt_end and slot_end > appt_start:
                 return True
         return False
+
+
+# ── Purchase-Process auto-sync ────────────────────────────────────────────────
+
+PURCHASE_PROGRESS = {
+    'lead':   0,
+    'visita': 11,
+}
+
+# Statuses that push PurchaseProcess → visita
+_VISITA_STATUSES = {
+    Appointment.Status.EN_PROGRESO,
+    Appointment.Status.COMPLETADA,
+}
+
+# Statuses that push PurchaseProcess back → lead
+_LEAD_STATUSES = {
+    Appointment.Status.PROGRAMADA,
+    Appointment.Status.CONFIRMADA,
+    Appointment.Status.CANCELADA,
+    Appointment.Status.NO_SHOW,
+}
+
+
+@transaction.atomic
+def sync_purchase_process_on_appointment(appointment, is_new=False):
+    """
+    Syncs PurchaseProcess state when a 'primera_visita' appointment is
+    created or its status changes.
+
+    On create (is_new=True):
+      - If type is primera_visita and client_membership is set:
+          • No active process for that client+property → create one in 'lead',
+            keep appointment type as primera_visita.
+          • Active process already exists → downgrade appointment type to 'seguimiento'.
+
+    On status update (is_new=False):
+      - If type is primera_visita:
+          • New status in {en_progreso, completada} → push process to 'visita'.
+          • New status in {programada, confirmada, cancelada, no_show}
+            → push process back to 'lead' (only if it was in 'visita').
+    """
+    from apps.transactions.models import PurchaseProcess
+
+    # Only meaningful when we know which client this appointment belongs to
+    if not appointment.client_membership_id:
+        return
+
+    Appt = Appointment
+
+    if is_new:
+        if appointment.appointment_type != Appt.AppointmentType.PRIMERA_VISITA:
+            return
+
+        existing = PurchaseProcess.objects.filter(
+            tenant=appointment.tenant,
+            property=appointment.property,
+            client_membership=appointment.client_membership,
+        ).exclude(status='cancelado').first()
+
+        if existing:
+            # A process already exists → this is a follow-up, not a first visit
+            appointment.appointment_type = Appt.AppointmentType.SEGUIMIENTO
+            appointment.save(update_fields=['appointment_type'])
+        else:
+            # First time → create a new process in lead
+            PurchaseProcess.objects.create(
+                tenant=appointment.tenant,
+                property=appointment.property,
+                client_membership=appointment.client_membership,
+                agent_membership=appointment.agent_membership,
+                status=PurchaseProcess.Status.LEAD,
+                overall_progress=PURCHASE_PROGRESS['lead'],
+                notes='Creado automáticamente al agendar primera visita.',
+            )
+        return
+
+    # ── Status-change sync (only for primera_visita appointments) ──
+    if appointment.appointment_type != Appt.AppointmentType.PRIMERA_VISITA:
+        return
+
+    process = PurchaseProcess.objects.filter(
+        tenant=appointment.tenant,
+        property=appointment.property,
+        client_membership=appointment.client_membership,
+    ).exclude(status='cancelado').first()
+
+    if not process:
+        return
+
+    if appointment.status in _VISITA_STATUSES:
+        if process.status == PurchaseProcess.Status.LEAD:
+            process.status = PurchaseProcess.Status.VISITA
+            process.overall_progress = PURCHASE_PROGRESS['visita']
+            process.save(update_fields=['status', 'overall_progress', 'updated_at'])
+
+    elif appointment.status in _LEAD_STATUSES:
+        if process.status == PurchaseProcess.Status.VISITA:
+            process.status = PurchaseProcess.Status.LEAD
+            process.overall_progress = PURCHASE_PROGRESS['lead']
+            process.save(update_fields=['status', 'overall_progress', 'updated_at'])
