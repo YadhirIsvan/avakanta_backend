@@ -121,6 +121,14 @@ class CreateAppointmentView(APIView):
 
         # 7. Crear la cita de forma atómica
         with transaction.atomic():
+            # 7a. Re-verify availability one more time before creating
+            # This prevents race condition where another concurrent request booked the slot
+            rechecked_availability = svc.get_available_slots(prop.pk, target_date)
+            if time_str not in rechecked_availability['available_slots']:
+                return Response(
+                    {'error': 'El agente no tiene disponibilidad en ese horario. El slot fue reservado por otro cliente.'}, status=409
+                )
+
             matricula = generate_matricula(prop.tenant_id)
             appointment = Appointment.objects.create(
                 tenant=prop.tenant,

@@ -3,7 +3,7 @@ from .models import Property
 
 
 class PublicPropertyFilter(django_filters.FilterSet):
-    zone = django_filters.CharFilter(field_name='zone', lookup_expr='iexact')
+    zone = django_filters.CharFilter(field_name='city__name', lookup_expr='iexact')
     type = django_filters.CharFilter(field_name='property_type', lookup_expr='exact')
     state = django_filters.CharFilter(field_name='property_condition', lookup_expr='exact')
     amenities = django_filters.BaseInFilter(

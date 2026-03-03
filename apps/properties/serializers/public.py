@@ -75,7 +75,8 @@ class PublicPropertyListSerializer(serializers.ModelSerializer):
 
     def get_image(self, obj):
         request = self.context.get('request')
-        cover = obj.images.filter(is_cover=True).first()
+        # Busca imagen marcada como portada, sino la primera imagen disponible
+        cover = obj.images.filter(is_cover=True).first() or obj.images.order_by('sort_order').first()
         return build_absolute_url(cover.image_url, request) if cover else None
 
     def get_days_listed(self, obj):
