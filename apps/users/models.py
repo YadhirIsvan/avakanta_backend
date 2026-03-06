@@ -115,6 +115,37 @@ class UserNotificationPreferences(models.Model):
         return f'NotifPrefs({self.membership})'
 
 
+class ClientFinancialProfile(models.Model):
+    """Perfil financiero del cliente para cálculo de presupuesto de compra."""
+    class LoanType(models.TextChoices):
+        INDIVIDUAL = 'individual', 'Individual'
+        CONYUGAL = 'conyugal', 'Conyugal'
+        COFINAVIT = 'cofinavit', 'Cofinavit'
+
+    membership = models.OneToOneField(
+        TenantMembership,
+        on_delete=models.CASCADE,
+        related_name='financial_profile'
+    )
+    loan_type = models.CharField(max_length=20, choices=LoanType.choices)
+    monthly_income = models.DecimalField(max_digits=12, decimal_places=2)
+    partner_monthly_income = models.DecimalField(max_digits=12, decimal_places=2, default=0, null=True)
+    savings_for_enganche = models.DecimalField(max_digits=12, decimal_places=2)
+    has_infonavit = models.BooleanField(default=False)
+    infonavit_subcuenta_balance = models.DecimalField(max_digits=12, decimal_places=2, default=0, null=True)
+    calculated_budget = models.DecimalField(max_digits=14, decimal_places=2, default=0)
+    created_at = models.DateTimeField(auto_now_add=True)
+    updated_at = models.DateTimeField(auto_now=True)
+
+    class Meta:
+        db_table = 'client_financial_profiles'
+        verbose_name = 'Client Financial Profile'
+        verbose_name_plural = 'Client Financial Profiles'
+
+    def __str__(self):
+        return f'FinancialProfile({self.membership.user.email}, {self.loan_type})'
+
+
 class OTPCode(models.Model):
     email = models.EmailField(db_index=True)
     code_hash = models.CharField(max_length=255)

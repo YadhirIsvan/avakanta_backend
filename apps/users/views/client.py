@@ -3,13 +3,16 @@ from django.db.models import Q
 from rest_framework.permissions import IsAuthenticated
 from rest_framework.response import Response
 from rest_framework.views import APIView
+from rest_framework import status
 
 from core.permissions import IsClient
-from apps.users.models import TenantMembership, UserNotificationPreferences
+from apps.users.models import TenantMembership, UserNotificationPreferences, ClientFinancialProfile
 from apps.users.serializers.client import (
     ClientProfileSerializer,
     ClientProfileUpdateSerializer,
     ClientNotificationPreferencesSerializer,
+    ClientFinancialProfileSerializer,
+    ClientFinancialProfileCreateUpdateSerializer,
 )
 from apps.transactions.models import PurchaseProcess, ProcessStatusHistory, SaleProcess
 
@@ -199,3 +202,131 @@ class ClientNotificationPreferencesView(APIView):
         ])
 
         return Response(ClientNotificationPreferencesSerializer(prefs).data)
+
+
+class ClientFinancialProfileView(APIView):
+    """GET, POST, PUT /client/financial-profile/
+    
+    GET: obtener perfil financiero del cliente
+    POST: crear perfil financiero (primera vez)
+    PUT: actualizar perfil financiero
+    """
+    permission_classes = [IsAuthenticated, IsClient]
+
+    def _get_membership(self, request):
+        return TenantMembership.objects.select_related('user').get(
+            user=request.user, tenant=request.tenant, is_active=True
+        )
+
+    def _calculate_budget(self, loan_type, monthly_income, partner_monthly_income, savings):
+        """Calcula presupuesto máximo usando fórmula de amortización."""
+        # Ingresos totales mensuales
+        total_monthly_income = float(monthly_income)
+        if loan_type == 'conyugal' and partner_monthly_income:
+            total_monthly_income += float(partner_monthly_income)
+
+        # Parámetros asumidos: tasa 11% anual, plazo 15 años
+        monthly_rate = 0.11 / 12
+        months = 15 * 12
+
+        # Máximo a pagar por mes (40% del ingreso)
+        max_monthly_payment = total_monthly_income * 0.4
+
+        # Fórmula de amortización inversa: principal = pago / factor
+        if monthly_rate == 0:
+            max_principal = max_monthly_payment * months
+        else:
+            amortization_factor = (monthly_rate * (1 + monthly_rate) ** months) / ((1 + monthly_rate) ** months - 1)
+            max_principal = max_monthly_payment / amortization_factor
+
+        # Presupuesto total = lo que puede financiar + su ahorro actual
+        total_budget = max_principal + float(savings)
+        return round(total_budget, 2)
+
+    def get(self, request):
+        """GET: obtener perfil financiero"""
+        membership = self._get_membership(request)
+        try:
+            profile = ClientFinancialProfile.objects.get(membership=membership)
+            return Response(ClientFinancialProfileSerializer(profile).data)
+        except ClientFinancialProfile.DoesNotExist:
+            return Response(
+                {'error': 'No financial profile found'},
+                status=status.HTTP_404_NOT_FOUND
+            )
+
+    def post(self, request):
+        """POST: crear perfil financiero (primera vez)"""
+        membership = self._get_membership(request)
+        
+        # Validar que no exista ya
+        if ClientFinancialProfile.objects.filter(membership=membership).exists():
+            return Response(
+                {'error': 'Financial profile already exists. Use PUT to update.'},
+                status=status.HTTP_400_BAD_REQUEST
+            )
+
+        serializer = ClientFinancialProfileCreateUpdateSerializer(data=request.data)
+        serializer.is_valid(raise_exception=True)
+        data = serializer.validated_data
+
+        # Calcular presupuesto
+        calculated_budget = self._calculate_budget(
+            loan_type=data['loan_type'],
+            monthly_income=data['monthly_income'],
+            partner_monthly_income=data.get('partner_monthly_income'),
+            savings=data['savings_for_enganche']
+        )
+
+        # Crear perfil
+        profile = ClientFinancialProfile.objects.create(
+            membership=membership,
+            loan_type=data['loan_type'],
+            monthly_income=data['monthly_income'],
+            partner_monthly_income=data.get('partner_monthly_income', 0),
+            savings_for_enganche=data['savings_for_enganche'],
+            has_infonavit=data.get('has_infonavit', False),
+            infonavit_subcuenta_balance=data.get('infonavit_subcuenta_balance', 0),
+            calculated_budget=calculated_budget
+        )
+
+        return Response(
+            ClientFinancialProfileSerializer(profile).data,
+            status=status.HTTP_201_CREATED
+        )
+
+    def put(self, request):
+        """PUT: actualizar perfil financiero"""
+        membership = self._get_membership(request)
+        
+        try:
+            profile = ClientFinancialProfile.objects.get(membership=membership)
+        except ClientFinancialProfile.DoesNotExist:
+            return Response(
+                {'error': 'No financial profile found. Use POST to create.'},
+                status=status.HTTP_404_NOT_FOUND
+            )
+
+        serializer = ClientFinancialProfileCreateUpdateSerializer(data=request.data)
+        serializer.is_valid(raise_exception=True)
+        data = serializer.validated_data
+
+        # Calcular presupuesto con nuevos datos
+        calculated_budget = self._calculate_budget(
+            loan_type=data['loan_type'],
+            monthly_income=data['monthly_income'],
+            partner_monthly_income=data.get('partner_monthly_income'),
+            savings=data['savings_for_enganche']
+        )
+
+        # Actualizar perfil
+        profile.loan_type = data['loan_type']
+        profile.monthly_income = data['monthly_income']
+        profile.partner_monthly_income = data.get('partner_monthly_income', 0)
+        profile.savings_for_enganche = data['savings_for_enganche']
+        profile.has_infonavit = data.get('has_infonavit', False)
+        profile.infonavit_subcuenta_balance = data.get('infonavit_subcuenta_balance', 0)
+        profile.calculated_budget = calculated_budget
+        profile.save()
+
+        return Response(ClientFinancialProfileSerializer(profile).data)

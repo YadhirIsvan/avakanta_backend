@@ -1,7 +1,7 @@
 from django.contrib import admin
 from django.contrib.auth.admin import UserAdmin as BaseUserAdmin
 
-from .models import User, TenantMembership, AgentProfile, UserNotificationPreferences, OTPCode
+from .models import User, TenantMembership, AgentProfile, UserNotificationPreferences, ClientFinancialProfile, OTPCode
 
 
 @admin.register(User)
@@ -48,6 +48,32 @@ class UserNotificationPreferencesAdmin(admin.ModelAdmin):
     list_display = ('membership', 'new_properties', 'price_updates', 'appointment_reminders', 'offers')
     search_fields = ('membership__user__email',)
     readonly_fields = ('updated_at',)
+
+
+@admin.register(ClientFinancialProfile)
+class ClientFinancialProfileAdmin(admin.ModelAdmin):
+    list_display = ('membership', 'loan_type', 'monthly_income', 'calculated_budget', 'updated_at')
+    list_filter = ('loan_type', 'has_infonavit')
+    search_fields = ('membership__user__email',)
+    readonly_fields = ('calculated_budget', 'created_at', 'updated_at')
+    fieldsets = (
+        ('Información del Cliente', {
+            'fields': ('membership',)
+        }),
+        ('Datos Financieros', {
+            'fields': ('loan_type', 'monthly_income', 'partner_monthly_income', 'savings_for_enganche')
+        }),
+        ('Infonavit', {
+            'fields': ('has_infonavit', 'infonavit_subcuenta_balance')
+        }),
+        ('Resultado', {
+            'fields': ('calculated_budget',)
+        }),
+        ('Auditoría', {
+            'fields': ('created_at', 'updated_at'),
+            'classes': ('collapse',)
+        }),
+    )
 
 
 @admin.register(OTPCode)
