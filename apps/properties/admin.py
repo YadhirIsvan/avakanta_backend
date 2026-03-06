@@ -3,6 +3,7 @@ from django.contrib import admin
 from .models import (
     Property, PropertyImage, PropertyAmenity,
     PropertyDocument, PropertyNearbyPlace, PropertyAssignment,
+    SavedProperty,
 )
 
 
@@ -74,3 +75,11 @@ class PropertyAssignmentAdmin(admin.ModelAdmin):
     list_filter = ('is_visible',)
     raw_id_fields = ('property', 'agent_membership')
     readonly_fields = ('assigned_at',)
+
+
+@admin.register(SavedProperty)
+class SavedPropertyAdmin(admin.ModelAdmin):
+    list_display = ('client_membership', 'property', 'tenant', 'created_at')
+    list_filter = ('tenant',)
+    raw_id_fields = ('client_membership', 'property', 'tenant')
+    readonly_fields = ('created_at',)

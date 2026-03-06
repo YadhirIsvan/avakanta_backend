@@ -225,3 +225,30 @@ class PropertyAssignment(models.Model):
 
     def __str__(self):
         return f'Assignment({self.property_id} → {self.agent_membership_id})'
+
+
+class SavedProperty(models.Model):
+    tenant = models.ForeignKey(
+        'tenants.Tenant',
+        on_delete=models.CASCADE,
+        related_name='saved_properties'
+    )
+    client_membership = models.ForeignKey(
+        'users.TenantMembership',
+        on_delete=models.CASCADE,
+        related_name='saved_properties'
+    )
+    property = models.ForeignKey(
+        Property,
+        on_delete=models.CASCADE,
+        related_name='saved_by'
+    )
+    created_at = models.DateTimeField(auto_now_add=True)
+
+    class Meta:
+        db_table = 'saved_properties'
+        unique_together = [('client_membership', 'property')]
+        ordering = ['-created_at']
+
+    def __str__(self):
+        return f'Saved({self.client_membership_id} → {self.property_id})'

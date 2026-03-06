@@ -1,7 +1,7 @@
 from django.contrib import admin
 from django.contrib.auth.admin import UserAdmin as BaseUserAdmin
 
-from .models import User, TenantMembership, AgentProfile, UserNotificationPreferences, ClientFinancialProfile, OTPCode
+from .models import User, TenantMembership, AgentProfile, UserNotificationPreferences, OTPCode, ClientFinancialProfile
 
 
 @admin.register(User)
@@ -50,35 +50,26 @@ class UserNotificationPreferencesAdmin(admin.ModelAdmin):
     readonly_fields = ('updated_at',)
 
 
-@admin.register(ClientFinancialProfile)
-class ClientFinancialProfileAdmin(admin.ModelAdmin):
-    list_display = ('membership', 'loan_type', 'monthly_income', 'calculated_budget', 'updated_at')
-    list_filter = ('loan_type', 'has_infonavit')
-    search_fields = ('membership__user__email',)
-    readonly_fields = ('calculated_budget', 'created_at', 'updated_at')
-    fieldsets = (
-        ('Información del Cliente', {
-            'fields': ('membership',)
-        }),
-        ('Datos Financieros', {
-            'fields': ('loan_type', 'monthly_income', 'partner_monthly_income', 'savings_for_enganche')
-        }),
-        ('Infonavit', {
-            'fields': ('has_infonavit', 'infonavit_subcuenta_balance')
-        }),
-        ('Resultado', {
-            'fields': ('calculated_budget',)
-        }),
-        ('Auditoría', {
-            'fields': ('created_at', 'updated_at'),
-            'classes': ('collapse',)
-        }),
-    )
-
-
 @admin.register(OTPCode)
 class OTPCodeAdmin(admin.ModelAdmin):
     list_display = ('email', 'created_at', 'expires_at', 'is_used')
     list_filter = ('is_used',)
     search_fields = ('email',)
     readonly_fields = ('created_at',)
+
+
+@admin.register(ClientFinancialProfile)
+class ClientFinancialProfileAdmin(admin.ModelAdmin):
+    list_display = ('membership', 'loan_type', 'monthly_income', 'calculated_budget', 'has_infonavit', 'created_at')
+    list_filter = ('loan_type', 'has_infonavit', 'created_at')
+    search_fields = ('membership__user__email',)
+    readonly_fields = ('calculated_budget', 'created_at', 'updated_at')
+    raw_id_fields = ('membership',)
+    
+    fieldsets = (
+        ('Información Básica', {'fields': ('membership', 'loan_type')}),
+        ('Ingresos', {'fields': ('monthly_income', 'partner_monthly_income')}),
+        ('Enganche', {'fields': ('savings_for_enganche',)}),
+        ('Infonavit', {'fields': ('has_infonavit', 'infonavit_subcuenta_balance')}),
+        ('Cálculos', {'fields': ('calculated_budget', 'created_at', 'updated_at')}),
+    )
