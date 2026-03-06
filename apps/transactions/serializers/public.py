@@ -15,3 +15,4 @@ class SellerLeadSerializer(serializers.Serializer):
     expected_price = serializers.DecimalField(
         max_digits=14, decimal_places=2, required=False, allow_null=True
     )
+    created_by_membership = serializers.IntegerField(required=False, allow_null=True)

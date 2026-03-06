@@ -17,6 +17,30 @@ SALE_STAGES = [
 
 SALE_PROGRESS_STEP = {key: i + 1 for i, (key, _) in enumerate(SALE_STAGES)}
 
+# Los 5 pasos que se muestran al cliente
+PURCHASE_STEPS_DISPLAY = [
+    ('lead', 'Lead', False),
+    ('visita', 'Visita', False),
+    ('credito', 'Crédito', True),
+    ('docs_finales', 'Docs finales', True),
+    ('cerrado', 'Compra exitosa', False),
+]
+
+# Mapeo de status internos a los pasos agrupados que ve el cliente
+PURCHASE_STATUS_TO_STEP = {
+    'lead': 'lead',
+    'visita': 'visita',
+    'interes': 'credito',
+    'pre_aprobacion': 'credito',
+    'avaluo': 'credito',
+    'credito': 'docs_finales',
+    'docs_finales': 'docs_finales',
+    'escrituras': 'docs_finales',
+    'cerrado': 'cerrado',
+    'cancelado': 'lead',  # fallback
+}
+
+# Para backward compatibility
 PURCHASE_STAGES = [
     ('lead', 'Lead', False),
     ('visita', 'Visita', False),
@@ -48,9 +72,53 @@ def _address(prop):
     return ', '.join(parts) if parts else ''
 
 
-def _cover_image(prop):
-    cover = prop.images.filter(is_cover=True).first()
-    return cover.image_url if cover else None
+def _cover_image(prop, request=None):
+    # Retorna la imagen marcada como cover, o la primera disponible
+    cover = prop.images.filter(is_cover=True).first() or prop.images.order_by('sort_order').first()
+    if not cover or not cover.image_url:
+        return None
+    
+    # Si la URL es relativa, convertir a absoluta
+    image_url = cover.image_url
+    if image_url and not image_url.startswith('http'):
+        if request:
+            base_url = request.build_absolute_uri('/')
+            image_url = f"{base_url.rstrip('/')}{image_url}"
+        else:
+            # Fallback si no hay request
+            from django.conf import settings
+            base_url = settings.BACKEND_URL or 'http://localhost:8000'
+            image_url = f"{base_url.rstrip('/')}{image_url}"
+    
+    return image_url
+
+
+def get_client_visible_status(sale_process):
+    """
+    Maps internal status to 4 client-visible statuses basado en el SaleProcess MÁS RECIENTE:
+    
+    Equivalencias:
+    - 'registrar_propiedad' = cualquier estado inicial del SaleProcess 
+      (seller_completed, contacto_inicial, evaluacion, valuacion, presentacion, publicacion)
+    - 'aprobar_estado' = firma_contrato
+    - 'marketing' = marketing
+    - 'vendida' = Si hay un PurchaseProcess cerrado
+    """
+    # 1. Prioridad máxima: Si hay PurchaseProcess.status='cerrado' → propiedad VENDIDA
+    if sale_process.property.purchase_processes.filter(status='cerrado').exists():
+        return 'vendida'
+
+    # 2. Revisar el estado del SaleProcess (que ya es el más reciente en la query)
+    # Status values are in ENGLISH (seller_completed, not vendedor_completado)
+    if sale_process.status in ['seller_completed', 'contacto_inicial', 'evaluacion', 'valuacion', 'presentacion', 'publicacion']:
+        return 'registrar_propiedad'
+    elif sale_process.status == 'firma_contrato':
+        return 'aprobar_estado'
+    elif sale_process.status == 'marketing':
+        return 'marketing'
+
+    # Default fallback
+    return 'registrar_propiedad'
 
 
 # ── Client Sale Process ───────────────────────────────────────────────────────
@@ -63,22 +131,24 @@ class ClientSaleProcessListSerializer(serializers.ModelSerializer):
     days_listed = serializers.SerializerMethodField()
     trend = serializers.SerializerMethodField()
     agent = serializers.SerializerMethodField()
+    client_visible_status = serializers.SerializerMethodField()
 
     class Meta:
         model = SaleProcess
         fields = [
-            'id', 'property', 'status', 'progress_step',
+            'id', 'property', 'status', 'client_visible_status', 'progress_step',
             'views', 'interested', 'days_listed', 'trend', 'agent',
         ]
 
     def get_property(self, obj):
+        request = self.context.get('request')
         return {
             'id': obj.property_id,
             'title': obj.property.title,
             'address': _address(obj.property),
             'price': str(obj.property.price),
             'status': obj.property.status,
-            'image': _cover_image(obj.property),
+            'image': _cover_image(obj.property, request),
         }
 
     def get_progress_step(self, obj):
@@ -104,6 +174,9 @@ class ClientSaleProcessListSerializer(serializers.ModelSerializer):
             return None
         return {'name': obj.agent_membership.user.get_full_name() or obj.agent_membership.user.email}
 
+    def get_client_visible_status(self, obj):
+        return get_client_visible_status(obj)
+
 
 class ClientSaleProcessDetailSerializer(serializers.ModelSerializer):
     property = serializers.SerializerMethodField()
@@ -116,10 +189,23 @@ class ClientSaleProcessDetailSerializer(serializers.ModelSerializer):
         fields = ['id', 'status', 'property', 'agent', 'stages', 'history']
 
     def get_property(self, obj):
+        request = self.context.get('request')
+        prop = obj.property
         return {
-            'id': obj.property_id,
-            'title': obj.property.title,
-            'image': _cover_image(obj.property),
+            'id': prop.id,
+            'title': prop.title,
+            'image': _cover_image(prop, request),
+            'price': str(prop.price),
+            'currency': prop.currency,
+            'address_street': prop.address_street,
+            'address_number': prop.address_number,
+            'address_neighborhood': prop.address_neighborhood,
+            'city': {'id': prop.city.id, 'name': prop.city.name} if prop.city else None,
+            'bedrooms': prop.bedrooms,
+            'bathrooms': prop.bathrooms,
+            'construction_sqm': float(prop.construction_sqm) if prop.construction_sqm else None,
+            'land_sqm': float(prop.land_sqm) if prop.land_sqm else None,
+            'views': prop.views,
         }
 
     def get_agent(self, obj):
@@ -219,13 +305,13 @@ class ClientPurchaseProcessListSerializer(serializers.ModelSerializer):
 
 PURCHASE_PROGRESS_MAP = {
     'lead': 0,
-    'visita': 11,
-    'interes': 22,
-    'pre_aprobacion': 33,
-    'avaluo': 44,
-    'credito': 56,
-    'docs_finales': 67,
-    'escrituras': 78,
+    'visita': 25,
+    'interes': 50,
+    'pre_aprobacion': 50,
+    'avaluo': 50,
+    'credito': 75,
+    'docs_finales': 75,
+    'escrituras': 75,
     'cerrado': 100,
     'cancelado': 0,
 }
@@ -267,12 +353,31 @@ class ClientPurchaseProcessDetailSerializer(serializers.ModelSerializer):
         }
 
     def get_steps(self, obj):
+        # Mapear el status actual a su paso agrupado
         current_status = obj.status
+        
+        # Si el proceso está cerrado, todos los pasos están completados
+        if current_status == 'cerrado':
+            steps = []
+            for i, (key, label, allow_upload) in enumerate(PURCHASE_STEPS_DISPLAY):
+                steps.append({
+                    'key': key,
+                    'label': label,
+                    'progress': PURCHASE_PROGRESS_MAP.get(key, 0),
+                    'status': 'completed',
+                    'allow_upload': False,
+                })
+            return steps
+        
+        current_step = PURCHASE_STATUS_TO_STEP.get(current_status, 'lead')
+        
+        # Encontrar el índice del paso agrupado actual
         current_index = next(
-            (i for i, (key, _, _) in enumerate(PURCHASE_STAGES) if key == current_status), -1
+            (i for i, (key, _, _) in enumerate(PURCHASE_STEPS_DISPLAY) if key == current_step), -1
         )
+        
         steps = []
-        for i, (key, label, allow_upload) in enumerate(PURCHASE_STAGES):
+        for i, (key, label, allow_upload) in enumerate(PURCHASE_STEPS_DISPLAY):
             if i < current_index:
                 step_status = 'completed'
             elif i == current_index:

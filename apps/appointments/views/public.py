@@ -7,6 +7,7 @@ from rest_framework.views import APIView
 
 from apps.properties.models import Property, PropertyAssignment
 from apps.appointments.models import Appointment, AppointmentSettings
+from apps.transactions.models import PurchaseProcess
 from apps.users.models import TenantMembership
 from core.utils import generate_matricula
 from ..serializers.public import CreateAppointmentSerializer
@@ -148,6 +149,24 @@ class CreateAppointmentView(APIView):
                 duration_minutes=slot_duration,
                 status=Appointment.Status.PROGRAMADA,
             )
+            
+            # 7b. Crear PurchaseProcess si el cliente está autenticado
+            if client_membership:
+                # Verificar si no existe un PurchaseProcess activo para esta propiedad y cliente
+                purchase_process_exists = PurchaseProcess.objects.filter(
+                    property=prop,
+                    client_membership=client_membership,
+                    status__in=['lead', 'visita', 'interes', 'pre_aprobacion', 'avaluo', 'credito', 'docs_finales', 'escrituras']
+                ).exists()
+                
+                if not purchase_process_exists:
+                    PurchaseProcess.objects.create(
+                        tenant=prop.tenant,
+                        property=prop,
+                        client_membership=client_membership,
+                        agent_membership=agent_membership,
+                        status=PurchaseProcess.Status.LEAD,
+                    )
 
         agent_user = agent_membership.user
         return Response({

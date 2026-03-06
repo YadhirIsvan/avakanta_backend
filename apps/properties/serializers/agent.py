@@ -32,19 +32,23 @@ class AgentPropertyListSerializer(serializers.ModelSerializer):
     price = serializers.DecimalField(source='property.price', max_digits=14, decimal_places=2)
     property_type = serializers.CharField(source='property.property_type')
     status = serializers.CharField(source='property.status')
+    display_status = serializers.SerializerMethodField()
     image = serializers.SerializerMethodField()
     leads_count = serializers.IntegerField(read_only=True)
 
     class Meta:
         model = PropertyAssignment
         fields = ['id', 'title', 'address', 'price', 'property_type', 'status',
-                  'image', 'leads_count', 'assigned_at']
+                  'display_status', 'image', 'leads_count', 'assigned_at']
 
     def get_address(self, obj):
         return _address(obj.property)
 
     def get_image(self, obj):
         return _cover_image(obj.property)
+
+    def get_display_status(self, obj):
+        return obj.property.get_display_status()
 
 
 class AgentPropertyLeadSerializer(serializers.ModelSerializer):

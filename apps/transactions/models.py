@@ -50,6 +50,7 @@ class PurchaseProcess(models.Model):
 
 class SaleProcess(models.Model):
     class Status(models.TextChoices):
+        SELLER_COMPLETED = 'seller_completed', 'Vendedor completado'
         CONTACTO_INICIAL = 'contacto_inicial', 'Contacto inicial'
         EVALUACION = 'evaluacion', 'Evaluación'
         VALUACION = 'valuacion', 'Valuación'
@@ -135,6 +136,10 @@ class SellerLead(models.Model):
         'users.TenantMembership', on_delete=models.SET_NULL,
         null=True, blank=True, related_name='assigned_seller_leads'
     )
+    created_by_membership = models.ForeignKey(
+        'users.TenantMembership', on_delete=models.CASCADE,
+        null=True, blank=True, related_name='created_seller_leads'
+    )
     notes = models.TextField(blank=True)
     created_at = models.DateTimeField(auto_now_add=True)
     updated_at = models.DateTimeField(auto_now=True)
@@ -144,3 +149,38 @@ class SellerLead(models.Model):
 
     def __str__(self):
         return f'SellerLead({self.pk}) — {self.full_name}'
+
+    def save(self, *args, **kwargs):
+        """
+        Override save to auto-convert to property + sale process when status changes to 'converted'.
+        """
+        # Check if this is an update (object already exists in DB)
+        is_update = self.pk is not None
+
+        if is_update:
+            # Get the original object from DB to check if status changed
+            original = SellerLead.objects.get(pk=self.pk)
+            status_changed_to_converted = (
+                original.status != self.Status.CONVERTED and
+                self.status == self.Status.CONVERTED
+            )
+
+            # If status changed to 'converted' and agent is assigned, auto-convert
+            if status_changed_to_converted and self.assigned_agent_membership:
+                # First, save the model
+                super().save(*args, **kwargs)
+
+                # Then run the conversion logic
+                from .services import convert_seller_lead
+                try:
+                    convert_seller_lead(self, self.assigned_agent_membership)
+                except Exception:
+                    # If conversion fails, revert status back to original
+                    self.status = original.status
+                    super().save(*args, **kwargs)
+                    raise
+
+                return  # Already saved above
+
+        # Normal save for non-converted states or first creation
+        super().save(*args, **kwargs)

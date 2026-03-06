@@ -80,6 +80,39 @@ class Property(models.Model):
     def __str__(self):
         return f'{self.title} ({self.tenant.name})'
 
+    def get_display_status(self):
+        """
+        Calcula el estado equivalente para mostrar al cliente basado en el SaleProcess MÁS RECIENTE:
+        - SaleProcess status: vendedor_completado, contacto_inicial, evaluacion, valuacion, firma_contrato, marketing
+        - PurchaseProcess status: cerrado (vendida)
+        
+        Equivalencias:
+        - "registrar_propiedad" = nuevo flujo de venta (sale_process en estados iniciales)
+        - "aprobar_estado" = firma_contrato (SaleProcess)
+        - "marketing" = marketing (SaleProcess)
+        - "vendida" = cerrado (PurchaseProcess)
+        """
+        # Verificar si hay un PurchaseProcess cerrado
+        purchase_process = self.purchase_processes.filter(
+            status='cerrado'
+        ).order_by('-updated_at').first()
+        if purchase_process:
+            return 'vendida'
+        
+        # Verificar el estado del SaleProcess MÁS RECIENTE (por updated_at)
+        sale_process = self.sale_processes.order_by('-updated_at').first()
+        if sale_process:
+            if sale_process.status == 'firma_contrato':
+                return 'aprobar_estado'
+            elif sale_process.status == 'marketing':
+                return 'marketing'
+            # Si el sale_process existe en cualquier otro estado, está en el flujo de registro
+            else:
+                return 'registrar_propiedad'
+        
+        # Si no hay procesos relacionados, devolver el status actual o default
+        return self.status
+
 
 class PropertyImage(models.Model):
     property = models.ForeignKey(

@@ -88,56 +88,66 @@ def update_sale_process_status(process, new_status, notes, changed_by_membership
 def convert_seller_lead(lead, agent_membership):
     """
     Converts a SellerLead into a Property + SaleProcess atomically.
-    - Finds or creates User by lead.email, with role=client in the tenant.
+    - Uses the membership of the user who created the lead (created_by_membership)
     - Creates Property with listing_type=pending_listing, status=documentacion.
-    - Creates SaleProcess with status=contacto_inicial.
-    - Updates lead.status=converted.
+    - Creates SaleProcess with status=seller_completed with the actual user account.
+    - Email and phone from lead are used for contact info only.
+    - Updates lead.status=converted (using .update() to avoid triggering save() hook).
     Returns (property, sale_process).
     """
-    from apps.users.models import User, TenantMembership
     from apps.properties.models import Property
+    from apps.locations.models import City
+    from django.utils import timezone
 
-    # 1. Find or create the user
-    user, _ = User.objects.get_or_create(
-        email=lead.email,
-        defaults={'first_name': lead.full_name.split()[0] if lead.full_name else '',
-                  'last_name': ' '.join(lead.full_name.split()[1:]) if lead.full_name else '',
-                  'phone': lead.phone or None},
-    )
+    # 1. Validate that the lead has a creator (required for conversion)
+    if not lead.created_by_membership:
+        raise ValueError('El lead debe haber sido creado por un usuario autenticado para convertirse')
 
-    # 2. Find or create client membership in tenant
-    client_membership, _ = TenantMembership.objects.get_or_create(
-        user=user,
-        tenant=lead.tenant,
-        defaults={'role': TenantMembership.Role.CLIENT, 'is_active': True},
-    )
-    if client_membership.role != TenantMembership.Role.CLIENT:
-        # Exists with different role — still use it
-        pass
+    # 2. Use the membership of the user who actually created the lead
+    client_membership = lead.created_by_membership
 
-    # 3. Create Property (minimal, pending listing)
+    # 3. Generate property title based on location and type
+    location = lead.location or 'Propiedad'
+    property_type_display = lead.property_type.capitalize()
+    title = f'{property_type_display} en {location}'
+
+    # 4. Find City by name (location)
+    city = None
+    if lead.location:
+        city = City.objects.filter(name__iexact=lead.location).first()
+
+    # 5. Create Property (minimal, pending listing)
     prop = Property.objects.create(
         tenant=lead.tenant,
-        title=f'Propiedad de {lead.full_name}',
+        title=title,
         listing_type='pending_listing',
         status='documentacion',
         property_type=lead.property_type,
         price=lead.expected_price or 0,
+        bedrooms=lead.bedrooms,
+        bathrooms=lead.bathrooms,
+        land_sqm=lead.square_meters,
+        city=city,
+        address_neighborhood=lead.location,
     )
 
-    # 4. Create SaleProcess
+    # 6. Create SaleProcess with seller_completed status
     sale_process = SaleProcess.objects.create(
         tenant=lead.tenant,
         property=prop,
         client_membership=client_membership,
         agent_membership=agent_membership,
-        status=SaleProcess.Status.CONTACTO_INICIAL,
-        notes=f'Convertido desde seller lead #{lead.pk}',
+        status=SaleProcess.Status.SELLER_COMPLETED,
+        notes=f'Convertido desde seller lead #{lead.pk} - {lead.full_name} ({lead.email})',
     )
 
-    # 5. Update lead
-    lead.status = 'converted'
-    lead.save(update_fields=['status', 'updated_at'])
+    # 7. Update lead using .update() to avoid triggering save() hook
+    # Import SellerLead here to avoid circular imports
+    from .models import SellerLead
+    SellerLead.objects.filter(pk=lead.pk).update(
+        status='converted',
+        updated_at=timezone.now()
+    )
 
     return prop, sale_process
 
