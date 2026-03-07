@@ -45,7 +45,6 @@ class ClientSavedPropertiesView(APIView):
         try:
             prop = Property.objects.get(
                 pk=property_id,
-                tenant=request.tenant,
                 is_active=True,
                 listing_type='sale',
             )

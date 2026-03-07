@@ -128,16 +128,106 @@ class LogoutView(APIView):
 
 class GoogleLoginView(APIView):
     """
-    Login con Google Identity (stub — pendiente de implementación).
-    Request: { "idToken": "eyJ..." }
+    Login con Google Identity.
+    Acepta { "idToken": "..." } (access_token de Google OAuth2).
+    Verifica con Google userinfo, crea o recupera el usuario, y retorna JWT.
     """
     permission_classes = [AllowAny]
 
     def post(self, request):
-        return Response(
-            {'error': 'Not implemented yet'},
-            status=status.HTTP_501_NOT_IMPLEMENTED
+        import requests as http_requests
+
+        access_token = request.data.get('idToken')
+        if not access_token:
+            return Response(
+                {'error': 'idToken es requerido.'},
+                status=status.HTTP_400_BAD_REQUEST
+            )
+
+        # Verificar el token con Google userinfo endpoint
+        try:
+            google_response = http_requests.get(
+                'https://www.googleapis.com/oauth2/v3/userinfo',
+                headers={'Authorization': f'Bearer {access_token}'},
+                timeout=10,
+            )
+            if google_response.status_code != 200:
+                return Response(
+                    {'error': 'Token de Google inválido.'},
+                    status=status.HTTP_401_UNAUTHORIZED
+                )
+            idinfo = google_response.json()
+        except Exception:
+            return Response(
+                {'error': 'Error al verificar con Google.'},
+                status=status.HTTP_502_BAD_GATEWAY
+            )
+
+        email = idinfo.get('email')
+        if not email or not idinfo.get('email_verified'):
+            return Response(
+                {'error': 'Email no verificado por Google.'},
+                status=status.HTTP_400_BAD_REQUEST
+            )
+
+        first_name = idinfo.get('given_name', '')
+        last_name = idinfo.get('family_name', '')
+        avatar = idinfo.get('picture', '')
+
+        user, created = User.objects.get_or_create(
+            email=email,
+            defaults={
+                'first_name': first_name,
+                'last_name': last_name,
+                'avatar': avatar,
+                'auth_provider': User.AuthProvider.GOOGLE,
+                'is_active': True,
+            }
         )
+
+        # Si el usuario ya existía, actualizar avatar y provider si venía de email
+        if not created:
+            update_fields = []
+            if not user.first_name and first_name:
+                user.first_name = first_name
+                update_fields.append('first_name')
+            if not user.last_name and last_name:
+                user.last_name = last_name
+                update_fields.append('last_name')
+            if avatar and user.avatar != avatar:
+                user.avatar = avatar
+                update_fields.append('avatar')
+            if user.auth_provider == User.AuthProvider.EMAIL:
+                user.auth_provider = User.AuthProvider.GOOGLE
+                update_fields.append('auth_provider')
+            if update_fields:
+                user.save(update_fields=update_fields)
+
+        # Crear membresía client si no tiene ninguna
+        if not TenantMembership.objects.filter(user=user, is_active=True).exists():
+            from apps.tenants.models import Tenant
+            tenant = Tenant.objects.filter(is_active=True).first()
+            if tenant:
+                TenantMembership.objects.create(user=user, tenant=tenant, role='client')
+
+        memberships = TenantMembership.objects.filter(
+            user=user, is_active=True
+        ).select_related('tenant')
+
+        from ..serializers.auth import MembershipSerializer
+        refresh = RefreshToken.for_user(user)
+        return Response({
+            'access': str(refresh.access_token),
+            'refresh': str(refresh),
+            'user': {
+                'id': user.id,
+                'email': user.email,
+                'first_name': user.first_name,
+                'last_name': user.last_name,
+                'phone': user.phone,
+                'memberships': MembershipSerializer(memberships, many=True).data,
+            }
+        })
 
 
 class AppleLoginView(APIView):

@@ -200,3 +200,6 @@ EMAIL_HOST_USER = config('EMAIL_HOST_USER', default='')
 EMAIL_HOST_PASSWORD = config('EMAIL_HOST_PASSWORD', default='')
 EMAIL_USE_TLS = config('EMAIL_USE_TLS', default=True, cast=bool)
 DEFAULT_FROM_EMAIL = config('DEFAULT_FROM_EMAIL', default='noreply@avakanta.com')
+
+# Google OAuth
+GOOGLE_CLIENT_ID = config('GOOGLE_CLIENT_ID', default='475959109147-3dmiaob3u2dsn11r0tqh914l1rfh52hd.apps.googleusercontent.com')
