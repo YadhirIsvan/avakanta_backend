@@ -1,6 +1,6 @@
 from rest_framework import serializers
 
-from apps.users.models import User, ClientFinancialProfile
+from apps.users.models import User, ClientFinancialProfile, ClientProfile
 
 
 class ClientDashboardSerializer(serializers.Serializer):
@@ -15,7 +15,7 @@ class ClientProfileSerializer(serializers.ModelSerializer):
     class Meta:
         model = User
         fields = ['id', 'email', 'first_name', 'last_name', 'phone', 'avatar', 'city']
-        read_only_fields = ['id', 'email', 'avatar']
+        read_only_fields = ['id', 'email']
 
 
 class ClientProfileUpdateSerializer(serializers.Serializer):
@@ -23,6 +23,11 @@ class ClientProfileUpdateSerializer(serializers.Serializer):
     last_name = serializers.CharField(max_length=150, required=False, allow_blank=True)
     phone = serializers.CharField(max_length=50, required=False, allow_blank=True, allow_null=True)
     city = serializers.CharField(max_length=150, required=False, allow_blank=True, allow_null=True)
+    avatar = serializers.CharField(max_length=500, required=False, allow_blank=True, allow_null=True)
+
+
+class ClientAvatarUploadSerializer(serializers.Serializer):
+    avatar = serializers.ImageField()
 
 
 class ClientNotificationPreferencesSerializer(serializers.Serializer):
@@ -30,6 +35,12 @@ class ClientNotificationPreferencesSerializer(serializers.Serializer):
     price_updates = serializers.BooleanField()
     appointment_reminders = serializers.BooleanField()
     offers = serializers.BooleanField()
+
+
+class ClientProfileDetailSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = ClientProfile
+        fields = ['occupation', 'residence_location', 'desired_credit_type', 'desired_property_type', 'updated_at']
 
 
 class ClientFinancialProfileSerializer(serializers.ModelSerializer):

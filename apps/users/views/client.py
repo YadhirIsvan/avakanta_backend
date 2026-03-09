@@ -1,3 +1,4 @@
+import os
 from django.db.models import Q
 
 from rest_framework.permissions import IsAuthenticated
@@ -6,13 +7,17 @@ from rest_framework.views import APIView
 from rest_framework import status
 
 from core.permissions import IsClient
-from apps.users.models import TenantMembership, UserNotificationPreferences, ClientFinancialProfile
+from apps.users.models import TenantMembership, UserNotificationPreferences, ClientFinancialProfile, ClientProfile
+from django.core.files.storage import default_storage
+
 from apps.users.serializers.client import (
     ClientProfileSerializer,
     ClientProfileUpdateSerializer,
     ClientNotificationPreferencesSerializer,
     ClientFinancialProfileSerializer,
     ClientFinancialProfileCreateUpdateSerializer,
+    ClientProfileDetailSerializer,
+    ClientAvatarUploadSerializer,
 )
 from apps.transactions.models import PurchaseProcess, ProcessStatusHistory, SaleProcess
 
@@ -156,7 +161,7 @@ class ClientProfileView(APIView):
         data = serializer.validated_data
 
         update_fields = []
-        for field in ('first_name', 'last_name', 'phone', 'city'):
+        for field in ('first_name', 'last_name', 'phone', 'city', 'avatar'):
             if field in data:
                 setattr(request.user, field, data[field])
                 update_fields.append(field)
@@ -330,3 +335,36 @@ class ClientFinancialProfileView(APIView):
         profile.save()
 
         return Response(ClientFinancialProfileSerializer(profile).data)
+
+
+class ClientProfileDetailView(APIView):
+    permission_classes = [IsAuthenticated, IsClient]
+
+    def get(self, request):
+        membership = _get_client_membership(request)
+        profile, _ = ClientProfile.objects.get_or_create(membership=membership)
+        return Response(ClientProfileDetailSerializer(profile).data)
+
+    def patch(self, request):
+        membership = _get_client_membership(request)
+        profile, _ = ClientProfile.objects.get_or_create(membership=membership)
+        serializer = ClientProfileDetailSerializer(profile, data=request.data, partial=True)
+        serializer.is_valid(raise_exception=True)
+        serializer.save()
+        return Response(serializer.data)
+
+
+class ClientAvatarUploadView(APIView):
+    permission_classes = [IsAuthenticated, IsClient]
+
+    def post(self, request):
+        serializer = ClientAvatarUploadSerializer(data=request.data)
+        serializer.is_valid(raise_exception=True)
+        avatar_file = serializer.validated_data['avatar']
+        safe_name = os.path.basename(avatar_file.name)
+        path = f'avatars/{request.user.pk}/{safe_name}'
+        saved_path = default_storage.save(path, avatar_file)
+        avatar_url = request.build_absolute_uri(f'/media/{saved_path}')
+        request.user.avatar = avatar_url
+        request.user.save(update_fields=['avatar'])
+        return Response({'avatar': avatar_url})

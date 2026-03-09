@@ -76,7 +76,7 @@ def update_sale_process_status(process, new_status, notes, changed_by_membership
         notes=notes or '',
     )
 
-    if new_status == SaleProcess.Status.PUBLICACION:
+    if new_status == SaleProcess.Status.PUBLICAR:
         process.property.listing_type = 'sale'
         process.property.status = 'disponible'
         process.property.save(update_fields=['listing_type', 'status'])
@@ -137,7 +137,7 @@ def convert_seller_lead(lead, agent_membership):
         property=prop,
         client_membership=client_membership,
         agent_membership=agent_membership,
-        status=SaleProcess.Status.SELLER_COMPLETED,
+        status=SaleProcess.Status.VENDEDOR_COMPLETADO,
         notes=f'Convertido desde seller lead #{lead.pk} - {lead.full_name} ({lead.email})',
     )
 
@@ -147,6 +147,52 @@ def convert_seller_lead(lead, agent_membership):
     SellerLead.objects.filter(pk=lead.pk).update(
         status='converted',
         updated_at=timezone.now()
+    )
+
+    return prop, sale_process
+
+
+@transaction.atomic
+def create_sale_process_from_form(tenant, name_form, phone_form, property_type,
+                                  location, square_meters, bedrooms, bathrooms,
+                                  expected_price, client_membership=None):
+    """
+    Creates a Property + SaleProcess directly from the public sell form.
+    No SellerLead involved — the form creates the process directly with status=nuevo.
+    """
+    from apps.properties.models import Property
+    from apps.locations.models import City
+
+    # Generate title
+    property_type_display = property_type.capitalize()
+    title = f'{property_type_display} en {location}' if location else f'{property_type_display}'
+
+    # Find City by name
+    city = None
+    if location:
+        city = City.objects.filter(name__iexact=location).first()
+
+    prop = Property.objects.create(
+        tenant=tenant,
+        title=title,
+        listing_type='pending_listing',
+        status='documentacion',
+        property_type=property_type,
+        price=expected_price or 0,
+        bedrooms=bedrooms,
+        bathrooms=bathrooms,
+        land_sqm=square_meters,
+        city=city,
+        address_neighborhood=location,
+    )
+
+    sale_process = SaleProcess.objects.create(
+        tenant=tenant,
+        property=prop,
+        client_membership=client_membership,
+        status=SaleProcess.Status.NUEVO,
+        name_form=name_form,
+        phone_form=phone_form,
     )
 
     return prop, sale_process

@@ -5,6 +5,9 @@ from ..views.admin import (
     AdminPurchaseProcessDetailView,
     AdminSaleProcessListCreateView,
     AdminSaleProcessStatusView,
+    AdminSaleProcessAssignmentView,
+    AdminSaleProcessAssignView,
+    AdminSaleProcessUnassignView,
     AdminSellerLeadListView,
     AdminSellerLeadDetailView,
     AdminSellerLeadConvertView,
@@ -20,6 +23,9 @@ urlpatterns = [
     # Sale processes
     path('sale-processes', AdminSaleProcessListCreateView.as_view(), name='admin-sale-list-create'),
     path('sale-processes/<int:pk>/status', AdminSaleProcessStatusView.as_view(), name='admin-sale-status'),
+    path('sale-processes/assignments', AdminSaleProcessAssignmentView.as_view(), name='admin-sale-assignments'),
+    path('sale-processes/<int:pk>/assign', AdminSaleProcessAssignView.as_view(), name='admin-sale-assign'),
+    path('sale-processes/<int:pk>/unassign', AdminSaleProcessUnassignView.as_view(), name='admin-sale-unassign'),
     # Seller leads
     path('seller-leads', AdminSellerLeadListView.as_view(), name='admin-seller-lead-list'),
     path('seller-leads/<int:pk>', AdminSellerLeadDetailView.as_view(), name='admin-seller-lead-detail'),

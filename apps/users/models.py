@@ -146,6 +146,26 @@ class ClientFinancialProfile(models.Model):
         return f'FinancialProfile({self.membership.user.email}, {self.loan_type})'
 
 
+class ClientProfile(models.Model):
+    membership = models.OneToOneField(
+        TenantMembership, on_delete=models.CASCADE, related_name='client_profile'
+    )
+    occupation = models.CharField(max_length=200, blank=True, default='')
+    residence_location = models.CharField(max_length=200, blank=True, default='')
+    desired_credit_type = models.CharField(max_length=200, blank=True, default='')
+    desired_property_type = models.CharField(max_length=200, blank=True, default='')
+    created_at = models.DateTimeField(auto_now_add=True)
+    updated_at = models.DateTimeField(auto_now=True)
+
+    class Meta:
+        db_table = 'client_profiles'
+        verbose_name = 'Client Profile'
+        verbose_name_plural = 'Client Profiles'
+
+    def __str__(self):
+        return f'ClientProfile({self.membership})'
+
+
 class OTPCode(models.Model):
     email = models.EmailField(db_index=True)
     code_hash = models.CharField(max_length=255)

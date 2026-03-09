@@ -3,6 +3,7 @@ from django.conf import settings
 from rest_framework.views import APIView
 from rest_framework.response import Response
 from rest_framework.permissions import AllowAny, IsAuthenticated
+from rest_framework.throttling import ScopedRateThrottle
 from rest_framework import status
 
 from rest_framework_simplejwt.tokens import RefreshToken
@@ -10,11 +11,13 @@ from rest_framework_simplejwt.exceptions import TokenError
 
 from ..models import User, TenantMembership
 from ..serializers.auth import OTPRequestSerializer, OTPVerifySerializer, MembershipSerializer, RegisterSerializer
-from ..otp import create_otp, validate_otp
+from ..otp import create_otp, validate_otp, is_verify_blocked
 
 
 class OTPRequestView(APIView):
     permission_classes = [AllowAny]
+    throttle_classes = [ScopedRateThrottle]
+    throttle_scope = 'otp_request'
 
     def post(self, request):
         serializer = OTPRequestSerializer(data=request.data)
@@ -54,12 +57,20 @@ class OTPRequestView(APIView):
 
 class OTPVerifyView(APIView):
     permission_classes = [AllowAny]
+    throttle_classes = [ScopedRateThrottle]
+    throttle_scope = 'otp_verify'
 
     def post(self, request):
         serializer = OTPVerifySerializer(data=request.data)
         serializer.is_valid(raise_exception=True)
         email = serializer.validated_data['email']
         token = serializer.validated_data['token']
+
+        if is_verify_blocked(email):
+            return Response(
+                {'error': 'Demasiados intentos fallidos. Intenta en 15 minutos.'},
+                status=status.HTTP_429_TOO_MANY_REQUESTS
+            )
 
         if not validate_otp(email, token):
             return Response(
@@ -133,6 +144,8 @@ class GoogleLoginView(APIView):
     Verifica con Google userinfo, crea o recupera el usuario, y retorna JWT.
     """
     permission_classes = [AllowAny]
+    throttle_classes = [ScopedRateThrottle]
+    throttle_scope = 'auth_google'
 
     def post(self, request):
         import requests as http_requests
@@ -246,6 +259,8 @@ class AppleLoginView(APIView):
 
 class RegisterView(APIView):
     permission_classes = [AllowAny]
+    throttle_classes = [ScopedRateThrottle]
+    throttle_scope = 'auth_register'
 
     def post(self, request):
         serializer = RegisterSerializer(data=request.data)

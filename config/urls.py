@@ -30,6 +30,7 @@ urlpatterns = [
     path('api/v1/client/', include('apps.users.urls.client')),
     path('api/v1/client/', include('apps.transactions.urls.client')),
     path('api/v1/client/', include('apps.properties.urls.client')),
+    path('api/v1/client/', include('apps.appointments.urls.client')),
 
     # Notificaciones (todos los roles autenticados)
     path('api/v1/notifications/', include('apps.notifications.urls')),

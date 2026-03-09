@@ -40,10 +40,11 @@ class TenantMiddleware:
     def __call__(self, request):
         request.tenant = None
 
+        # Always try JWT auth so request.user is set even on public paths
+        _authenticate_jwt(request)
+
         if self._is_public_path(request.path):
             return self.get_response(request)
-
-        _authenticate_jwt(request)
 
         if request.user and request.user.is_authenticated:
             tenant = self._resolve_tenant(request)

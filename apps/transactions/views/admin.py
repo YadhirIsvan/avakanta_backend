@@ -243,7 +243,7 @@ class AdminSaleProcessListCreateView(APIView):
             property=prop,
             client_membership=client,
             agent_membership=agent,
-            status=SaleProcess.Status.CONTACTO_INICIAL,
+            status=SaleProcess.Status.NUEVO,
             notes=data.get('notes', ''),
         )
 
@@ -393,6 +393,106 @@ class AdminSellerLeadConvertView(APIView):
             'sale_process_id': sale_process.pk,
             'message': 'Lead convertido. Se creó la propiedad y el proceso de venta.',
         }, status=201)
+
+
+# ── Sale Process Assignments ──────────────────────────────────────────────────
+
+class AdminSaleProcessAssignmentView(APIView):
+    permission_classes = [IsAuthenticated, IsAdmin]
+
+    def get(self, request):
+        base_qs = (
+            SaleProcess.objects
+            .filter(tenant=request.tenant, property__listing_type='pending_listing')
+            .select_related(
+                'property',
+                'agent_membership__user',
+                'client_membership__user',
+            )
+            .prefetch_related('property__images')
+        )
+
+        unassigned = []
+        assigned = []
+
+        for sp in base_qs:
+            cover = sp.property.images.filter(is_cover=True).first()
+            image = cover.image_url if cover else None
+            prop = sp.property
+
+            entry = {
+                'sale_process_id': sp.pk,
+                'property': {
+                    'id': prop.pk,
+                    'title': prop.title,
+                    'property_type': prop.property_type,
+                    'image': image,
+                    'price': str(prop.price) if prop.price else None,
+                    'address': f'{prop.address_street} {prop.address_number}, {prop.address_neighborhood}'.strip(', '),
+                },
+                'status': sp.status,
+                'agent': None,
+            }
+
+            if sp.agent_membership:
+                user = sp.agent_membership.user
+                entry['agent'] = {
+                    'membership_id': sp.agent_membership_id,
+                    'name': user.get_full_name() or user.email,
+                }
+                assigned.append(entry)
+            else:
+                unassigned.append(entry)
+
+        return Response({
+            'unassigned': unassigned,
+            'assigned': assigned,
+        })
+
+
+class AdminSaleProcessAssignView(APIView):
+    permission_classes = [IsAuthenticated, IsAdmin]
+
+    def post(self, request, pk):
+        sp = SaleProcess.objects.filter(pk=pk, tenant=request.tenant).first()
+        if not sp:
+            return Response({'error': 'Proceso de venta no encontrado.'}, status=404)
+
+        agent_membership_id = request.data.get('agent_membership_id')
+        if not agent_membership_id:
+            return Response({'error': 'Se requiere agent_membership_id.'}, status=400)
+
+        agent = TenantMembership.objects.filter(
+            pk=agent_membership_id, tenant=request.tenant, role='agent', is_active=True
+        ).first()
+        if not agent:
+            return Response({'error': 'Agente no encontrado.'}, status=400)
+
+        sp.agent_membership = agent
+        sp.save(update_fields=['agent_membership', 'updated_at'])
+
+        user = agent.user
+        return Response({
+            'sale_process_id': sp.pk,
+            'agent': {
+                'membership_id': agent.pk,
+                'name': user.get_full_name() or user.email,
+            },
+        })
+
+
+class AdminSaleProcessUnassignView(APIView):
+    permission_classes = [IsAuthenticated, IsAdmin]
+
+    def post(self, request, pk):
+        sp = SaleProcess.objects.filter(pk=pk, tenant=request.tenant).first()
+        if not sp:
+            return Response({'error': 'Proceso de venta no encontrado.'}, status=404)
+
+        sp.agent_membership = None
+        sp.save(update_fields=['agent_membership', 'updated_at'])
+
+        return Response({'sale_process_id': sp.pk, 'agent': None})
 
 
 # ── History ───────────────────────────────────────────────────────────────────

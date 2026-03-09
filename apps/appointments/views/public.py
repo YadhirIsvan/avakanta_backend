@@ -115,10 +115,19 @@ class CreateAppointmentView(APIView):
 
         # 6. Determinar client_membership si el usuario está autenticado
         client_membership = None
-        if request.user.is_authenticated:
-            client_membership = TenantMembership.objects.filter(
-                user=request.user, tenant=prop.tenant, is_active=True
-            ).first()
+        try:
+            user = request.user
+            if user and user.is_authenticated:
+                # Buscar membership en el tenant de la propiedad O cualquier membership activa
+                client_membership = TenantMembership.objects.filter(
+                    user=user, tenant=prop.tenant, is_active=True
+                ).first()
+                if not client_membership:
+                    client_membership = TenantMembership.objects.filter(
+                        user=user, is_active=True
+                    ).first()
+        except Exception:
+            pass
 
         # 7. Crear la cita de forma atómica
         with transaction.atomic():
@@ -130,6 +139,9 @@ class CreateAppointmentView(APIView):
                     {'error': 'El agente no tiene disponibilidad en ese horario. El slot fue reservado por otro cliente.'}, status=409
                 )
 
+            # Resolve authenticated user for contact info
+            resolved_user = client_membership.user if client_membership else None
+
             matricula = generate_matricula(prop.tenant_id)
             appointment = Appointment.objects.create(
                 tenant=prop.tenant,
@@ -137,10 +149,10 @@ class CreateAppointmentView(APIView):
                 agent_membership=agent_membership,
                 client_membership=client_membership,
                 client_name=data.get('name', '') or (
-                    request.user.get_full_name() if request.user.is_authenticated else ''
+                    resolved_user.get_full_name() if resolved_user else ''
                 ),
                 client_email=data.get('email', '') or (
-                    request.user.email if request.user.is_authenticated else ''
+                    resolved_user.email if resolved_user else ''
                 ),
                 client_phone=data.get('phone', ''),
                 matricula=matricula,

@@ -161,7 +161,8 @@ class ClientPurchaseDocumentUploadView(APIView):
         except Exception as e:
             return Response({'error': str(e)}, status=400)
 
-        rel_path = f'documents/purchases/{process.pk}/{file.name}'
+        safe_name = os.path.basename(file.name)
+        rel_path = f'documents/purchases/{process.pk}/{safe_name}'
         abs_path = os.path.join(settings.MEDIA_ROOT, rel_path)
         os.makedirs(os.path.dirname(abs_path), exist_ok=True)
         with open(abs_path, 'wb+') as dest:

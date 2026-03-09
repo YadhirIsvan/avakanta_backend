@@ -50,14 +50,16 @@ class PurchaseProcess(models.Model):
 
 class SaleProcess(models.Model):
     class Status(models.TextChoices):
-        SELLER_COMPLETED = 'seller_completed', 'Vendedor completado'
+        NUEVO = 'nuevo', 'Nuevo'
+        CONTACTADO = 'contactado', 'Contactado'
+        EN_REVISION = 'en_revision', 'En revisión'
+        VENDEDOR_COMPLETADO = 'vendedor_completado', 'Vendedor completado'
         CONTACTO_INICIAL = 'contacto_inicial', 'Contacto inicial'
         EVALUACION = 'evaluacion', 'Evaluación'
         VALUACION = 'valuacion', 'Valuación'
-        PRESENTACION = 'presentacion', 'Presentación'
         FIRMA_CONTRATO = 'firma_contrato', 'Firma de contrato'
         MARKETING = 'marketing', 'Marketing'
-        PUBLICACION = 'publicacion', 'Publicación'
+        PUBLICAR = 'publicar', 'Publicar'
         CANCELADO = 'cancelado', 'Cancelado'
 
     tenant = models.ForeignKey(
@@ -68,15 +70,17 @@ class SaleProcess(models.Model):
     )
     client_membership = models.ForeignKey(
         'users.TenantMembership', on_delete=models.CASCADE,
-        related_name='client_sale_processes'
+        null=True, blank=True, related_name='client_sale_processes'
     )
     agent_membership = models.ForeignKey(
         'users.TenantMembership', on_delete=models.CASCADE,
         null=True, blank=True, related_name='agent_sale_processes'
     )
     status = models.CharField(
-        max_length=20, choices=Status.choices, default=Status.CONTACTO_INICIAL
+        max_length=20, choices=Status.choices, default=Status.NUEVO
     )
+    name_form = models.CharField(max_length=255, blank=True, default='')
+    phone_form = models.CharField(max_length=50, blank=True, default='')
     notes = models.TextField(blank=True)
     created_at = models.DateTimeField(auto_now_add=True)
     updated_at = models.DateTimeField(auto_now=True)

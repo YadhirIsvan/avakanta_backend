@@ -6,13 +6,16 @@ from ..models import SaleProcess, PurchaseProcess
 
 
 SALE_STAGES = [
+    ('nuevo', 'Nuevo'),
+    ('contactado', 'Contactado'),
+    ('en_revision', 'En Revisión'),
+    ('vendedor_completado', 'Vendedor Completado'),
     ('contacto_inicial', 'Contacto Inicial'),
     ('evaluacion', 'Evaluación'),
     ('valuacion', 'Valuación'),
-    ('presentacion', 'Presentación'),
     ('firma_contrato', 'Firma Contrato'),
     ('marketing', 'Marketing'),
-    ('publicacion', 'Publicación'),
+    ('publicar', 'Publicar'),
 ]
 
 SALE_PROGRESS_STEP = {key: i + 1 for i, (key, _) in enumerate(SALE_STAGES)}
@@ -95,26 +98,28 @@ def _cover_image(prop, request=None):
 
 def get_client_visible_status(sale_process):
     """
-    Maps internal status to 4 client-visible statuses basado en el SaleProcess MÁS RECIENTE:
-    
-    Equivalencias:
-    - 'registrar_propiedad' = cualquier estado inicial del SaleProcess 
-      (seller_completed, contacto_inicial, evaluacion, valuacion, presentacion, publicacion)
-    - 'aprobar_estado' = firma_contrato
-    - 'marketing' = marketing
+    Maps internal status to 5 client-visible statuses:
+
+    - 'registrar_propiedad' = nuevo, contactado, en_revision, vendedor_completado, contacto_inicial, evaluacion
+    - 'aprobar_estado' = valuacion, firma_contrato
+    - 'marketing' = marketing, publicar
+    - 'cancelado' = cancelado
     - 'vendida' = Si hay un PurchaseProcess cerrado
     """
     # 1. Prioridad máxima: Si hay PurchaseProcess.status='cerrado' → propiedad VENDIDA
     if sale_process.property.purchase_processes.filter(status='cerrado').exists():
         return 'vendida'
 
-    # 2. Revisar el estado del SaleProcess (que ya es el más reciente en la query)
-    # Status values are in ENGLISH (seller_completed, not vendedor_completado)
-    if sale_process.status in ['seller_completed', 'contacto_inicial', 'evaluacion', 'valuacion', 'presentacion', 'publicacion']:
+    # 2. Cancelado
+    if sale_process.status == 'cancelado':
+        return 'cancelado'
+
+    # 3. Revisar el estado del SaleProcess
+    if sale_process.status in ['nuevo', 'contactado', 'en_revision', 'vendedor_completado', 'contacto_inicial', 'evaluacion']:
         return 'registrar_propiedad'
-    elif sale_process.status == 'firma_contrato':
+    elif sale_process.status in ['valuacion', 'firma_contrato']:
         return 'aprobar_estado'
-    elif sale_process.status == 'marketing':
+    elif sale_process.status in ['marketing', 'publicar']:
         return 'marketing'
 
     # Default fallback

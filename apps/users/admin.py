@@ -1,7 +1,7 @@
 from django.contrib import admin
 from django.contrib.auth.admin import UserAdmin as BaseUserAdmin
 
-from .models import User, TenantMembership, AgentProfile, UserNotificationPreferences, OTPCode, ClientFinancialProfile
+from .models import User, TenantMembership, AgentProfile, UserNotificationPreferences, OTPCode, ClientFinancialProfile, ClientProfile
 
 
 @admin.register(User)
@@ -73,3 +73,11 @@ class ClientFinancialProfileAdmin(admin.ModelAdmin):
         ('Infonavit', {'fields': ('has_infonavit', 'infonavit_subcuenta_balance')}),
         ('Cálculos', {'fields': ('calculated_budget', 'created_at', 'updated_at')}),
     )
+
+
+@admin.register(ClientProfile)
+class ClientProfileAdmin(admin.ModelAdmin):
+    list_display = ('membership', 'occupation', 'residence_location', 'desired_credit_type', 'desired_property_type', 'updated_at')
+    search_fields = ('membership__user__email', 'occupation', 'residence_location')
+    readonly_fields = ('created_at', 'updated_at')
+    raw_id_fields = ('membership',)

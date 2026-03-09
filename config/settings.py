@@ -161,6 +161,19 @@ REST_FRAMEWORK = {
         'rest_framework.filters.OrderingFilter',
     ],
     'DEFAULT_SCHEMA_CLASS': 'drf_spectacular.openapi.AutoSchema',
+    'DEFAULT_THROTTLE_CLASSES': [
+        'rest_framework.throttling.AnonRateThrottle',
+        'rest_framework.throttling.UserRateThrottle',
+        'rest_framework.throttling.ScopedRateThrottle',
+    ],
+    'DEFAULT_THROTTLE_RATES': {
+        'anon': '100/minute',
+        'user': '300/minute',
+        'otp_request': '5/hour',
+        'otp_verify': '10/hour',
+        'auth_google': '10/hour',
+        'auth_register': '5/hour',
+    },
 }
 
 # ---------------------------------------------------------------------------
@@ -202,4 +215,19 @@ EMAIL_USE_TLS = config('EMAIL_USE_TLS', default=True, cast=bool)
 DEFAULT_FROM_EMAIL = config('DEFAULT_FROM_EMAIL', default='noreply@avakanta.com')
 
 # Google OAuth
-GOOGLE_CLIENT_ID = config('GOOGLE_CLIENT_ID', default='475959109147-3dmiaob3u2dsn11r0tqh914l1rfh52hd.apps.googleusercontent.com')
+GOOGLE_CLIENT_ID = config('GOOGLE_CLIENT_ID', default='')
+
+# ---------------------------------------------------------------------------
+# Security headers (producción)
+# ---------------------------------------------------------------------------
+if not DEBUG:
+    SECURE_SSL_REDIRECT = True
+    SECURE_HSTS_SECONDS = 31_536_000          # 1 año
+    SECURE_HSTS_INCLUDE_SUBDOMAINS = True
+    SECURE_HSTS_PRELOAD = True
+    SESSION_COOKIE_SECURE = True
+    CSRF_COOKIE_SECURE = True
+    SECURE_PROXY_SSL_HEADER = ('HTTP_X_FORWARDED_PROTO', 'https')
+
+X_FRAME_OPTIONS = 'DENY'
+SECURE_CONTENT_TYPE_NOSNIFF = True

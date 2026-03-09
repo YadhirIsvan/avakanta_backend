@@ -146,7 +146,8 @@ class AdminPropertyImageView(APIView):
             sort_order = (last.sort_order + 1) if last else 0
 
             # Save file to MEDIA_ROOT
-            rel_path = f'properties/{prop.pk}/images/{file.name}'
+            safe_name = os.path.basename(file.name)
+            rel_path = f'properties/{prop.pk}/images/{safe_name}'
             abs_path = os.path.join(settings.MEDIA_ROOT, rel_path)
             os.makedirs(os.path.dirname(abs_path), exist_ok=True)
             with open(abs_path, 'wb+') as dest:
@@ -216,7 +217,8 @@ class AdminPropertyDocumentView(APIView):
         except Exception as e:
             return Response({'error': str(e)}, status=400)
 
-        rel_path = f'documents/{prop.pk}/{file.name}'
+        safe_name = os.path.basename(file.name)
+        rel_path = f'documents/{prop.pk}/{safe_name}'
         abs_path = os.path.join(settings.MEDIA_ROOT, rel_path)
         os.makedirs(os.path.dirname(abs_path), exist_ok=True)
         with open(abs_path, 'wb+') as dest:
@@ -264,18 +266,18 @@ class AdminAssignmentView(APIView):
     permission_classes = [IsAuthenticated, IsAdmin]
 
     def get(self, request):
-        # Unassigned: active properties with no assignments at all
+        # Unassigned: active sale properties with no assignments at all
         unassigned = (
             Property.objects
-            .filter(tenant=request.tenant, is_active=True)
+            .filter(tenant=request.tenant, is_active=True, listing_type='sale')
             .filter(assignments__isnull=True)
             .values('id', 'title', 'property_type')
         )
 
-        # Assigned: group by property
+        # Assigned: group by property (only sale properties)
         assignments = (
             PropertyAssignment.objects
-            .filter(property__tenant=request.tenant, property__is_active=True)
+            .filter(property__tenant=request.tenant, property__is_active=True, property__listing_type='sale')
             .select_related('property', 'agent_membership__user')
             .order_by('property__title', 'agent_membership__user__first_name')
         )

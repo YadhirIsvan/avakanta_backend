@@ -16,3 +16,18 @@ class SellerLeadSerializer(serializers.Serializer):
         max_digits=14, decimal_places=2, required=False, allow_null=True
     )
     created_by_membership = serializers.IntegerField(required=False, allow_null=True)
+
+
+class SaleProcessPublicCreateSerializer(serializers.Serializer):
+    name_form = serializers.CharField(max_length=255)
+    phone_form = serializers.CharField(max_length=50)
+    property_type = serializers.CharField(max_length=20)
+    location = serializers.CharField(max_length=255, required=False, allow_blank=True)
+    square_meters = serializers.DecimalField(
+        max_digits=10, decimal_places=2, required=False, allow_null=True
+    )
+    bedrooms = serializers.IntegerField(required=False, allow_null=True)
+    bathrooms = serializers.IntegerField(required=False, allow_null=True)
+    expected_price = serializers.DecimalField(
+        max_digits=14, decimal_places=2, required=False, allow_null=True
+    )
