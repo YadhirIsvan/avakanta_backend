@@ -185,14 +185,11 @@ class GoogleLoginView(APIView):
 
         first_name = idinfo.get('given_name', '')
         last_name = idinfo.get('family_name', '')
-        avatar = idinfo.get('picture', '')
-
         user, created = User.objects.get_or_create(
             email=email,
             defaults={
                 'first_name': first_name,
                 'last_name': last_name,
-                'avatar': avatar,
                 'auth_provider': User.AuthProvider.GOOGLE,
                 'is_active': True,
             }
@@ -207,9 +204,7 @@ class GoogleLoginView(APIView):
             if not user.last_name and last_name:
                 user.last_name = last_name
                 update_fields.append('last_name')
-            if avatar and user.avatar != avatar:
-                user.avatar = avatar
-                update_fields.append('avatar')
+            # No sobreescribir avatar: el usuario pudo haberlo cambiado manualmente
             if user.auth_provider == User.AuthProvider.EMAIL:
                 user.auth_provider = User.AuthProvider.GOOGLE
                 update_fields.append('auth_provider')
