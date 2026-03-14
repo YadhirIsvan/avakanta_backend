@@ -55,6 +55,7 @@ class SalePipelineSetup(APITestCase):
         # SellerLead
         self.lead = SellerLead.objects.create(
             tenant=self.tenant,
+            created_by_membership=self.admin_m,
             full_name='Ana García',
             email='ana@example.com',
             phone='+52 272 000 0001',
@@ -243,7 +244,7 @@ class TestSaleProcessPublicacion(SalePipelineSetup):
     def test_publicacion_sets_property_listing_type_to_sale(self):
         self.client.patch(
             self._status_url(),
-            {'status': 'publicacion', 'notes': ''},
+            {'status': SaleProcess.Status.PUBLICAR, 'notes': ''},
             format='json',
             **_auth(self.token),
         )
@@ -253,7 +254,7 @@ class TestSaleProcessPublicacion(SalePipelineSetup):
     def test_publicacion_sets_property_status_to_disponible(self):
         self.client.patch(
             self._status_url(),
-            {'status': 'publicacion', 'notes': ''},
+            {'status': SaleProcess.Status.PUBLICAR, 'notes': ''},
             format='json',
             **_auth(self.token),
         )
@@ -263,17 +264,17 @@ class TestSaleProcessPublicacion(SalePipelineSetup):
     def test_publicacion_updates_sale_process_status(self):
         resp = self.client.patch(
             self._status_url(),
-            {'status': 'publicacion', 'notes': ''},
+            {'status': SaleProcess.Status.PUBLICAR, 'notes': ''},
             format='json',
             **_auth(self.token),
         )
         self.assertEqual(resp.status_code, 200)
-        self.assertEqual(resp.data['status'], 'publicacion')
+        self.assertEqual(resp.data['status'], SaleProcess.Status.PUBLICAR)
 
     def test_publicacion_creates_history_record(self):
         self.client.patch(
             self._status_url(),
-            {'status': 'publicacion', 'notes': ''},
+            {'status': SaleProcess.Status.PUBLICAR, 'notes': ''},
             format='json',
             **_auth(self.token),
         )
@@ -302,11 +303,11 @@ class TestSaleProcessPublicacion(SalePipelineSetup):
     def test_publicacion_via_service_directly(self):
         """
         Verificación directa del servicio sin HTTP:
-        update_sale_process_status con publicacion → propiedad actualizada.
+        update_sale_process_status con publicar → propiedad actualizada.
         """
         update_sale_process_status(
             process=self.sale_process,
-            new_status='publicacion',
+            new_status=SaleProcess.Status.PUBLICAR,
             notes='',
             changed_by_membership=self.admin_m,
         )

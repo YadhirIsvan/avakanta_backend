@@ -1,0 +1,313 @@
+"""
+Comprehensive tests for core middleware, utils, and other core functionality.
+"""
+from datetime import date, datetime, timedelta
+from unittest.mock import Mock, patch, MagicMock
+
+from django.test import TestCase, RequestFactory
+from django.http import JsonResponse
+from rest_framework_simplejwt.tokens import RefreshToken
+
+from apps.tenants.models import Tenant
+from apps.users.models import User, TenantMembership
+from apps.appointments.models import Appointment
+from core.middleware import TenantMiddleware, _authenticate_jwt
+from core.utils import generate_matricula, calculate_trend, days_listed
+
+
+# ── Tests for TenantMiddleware ──────────────────────────────────────────
+
+class TestTenantMiddleware(TestCase):
+    """Test TenantMiddleware functionality."""
+
+    def setUp(self):
+        self.factory = RequestFactory()
+        self.tenant = Tenant.objects.create(
+            name='Test Tenant',
+            slug='test-tenant',
+            email='tenant@test.com',
+            is_active=True,
+        )
+        self.user = User.objects.create(email='user@test.com', is_active=True)
+        self.membership = TenantMembership.objects.create(
+            user=self.user,
+            tenant=self.tenant,
+            role='client',
+            is_active=True,
+        )
+
+    def _get_request(self, path='/', method='GET', authenticated=False):
+        """Helper to create a request."""
+        request = self.factory.request(path=path, environ={})
+        request.user = self.user if authenticated else Mock(is_authenticated=False)
+        return request
+
+    def _middleware(self):
+        """Get middleware instance."""
+        def get_response(req):
+            return JsonResponse({'ok': True})
+        return TenantMiddleware(get_response)
+
+    def test_middleware_initializes(self):
+        """Middleware initializes with get_response."""
+        middleware = self._middleware()
+        self.assertIsNotNone(middleware.get_response)
+
+    def test_public_paths_bypass_tenant_resolution(self):
+        """Public paths don't require tenant resolution."""
+        middleware = self._middleware()
+        request = self._get_request(path='/api/v1/auth/login')
+        response = middleware(request)
+        self.assertIsNone(request.tenant)
+
+    def test_public_schema_path(self):
+        """Schema path is public."""
+        middleware = self._middleware()
+        request = self._get_request(path='/api/schema/')
+        response = middleware(request)
+        self.assertIsNone(request.tenant)
+
+    def test_public_docs_path(self):
+        """Docs path is public."""
+        middleware = self._middleware()
+        request = self._get_request(path='/api/docs/')
+        response = middleware(request)
+        self.assertIsNone(request.tenant)
+
+    def test_authenticated_user_resolves_tenant(self):
+        """Authenticated user gets tenant from membership."""
+        middleware = self._middleware()
+        with patch('core.middleware._authenticate_jwt'):
+            request = self._get_request(path='/api/v1/client/profile', authenticated=True)
+            response = middleware(request)
+            self.assertEqual(request.tenant, self.tenant)
+
+    def test_unauthenticated_user_private_path_no_tenant(self):
+        """Unauthenticated user on private path has no tenant."""
+        middleware = self._middleware()
+        request = self._get_request(path='/api/v1/client/profile', authenticated=False)
+        response = middleware(request)
+        self.assertIsNone(request.tenant)
+
+    def test_user_without_active_membership_returns_403(self):
+        """User without active membership gets 403."""
+        # Create user without active membership
+        user2 = User.objects.create(email='noactive@test.com', is_active=True)
+        membership2 = TenantMembership.objects.create(
+            user=user2,
+            tenant=self.tenant,
+            role='client',
+            is_active=False,  # Inactive
+        )
+
+        middleware = self._middleware()
+        request = RequestFactory().get(path='/api/v1/client/profile')
+        request.user = user2
+
+        response = middleware(request)
+        self.assertEqual(response.status_code, 403)
+
+    def test_user_with_multiple_memberships_needs_header(self):
+        """User with multiple memberships needs X-Tenant-ID header."""
+        # Add second tenant
+        tenant2 = Tenant.objects.create(
+            name='Tenant 2',
+            slug='tenant-2',
+            email='tenant2@test.com',
+            is_active=True,
+        )
+        TenantMembership.objects.create(
+            user=self.user,
+            tenant=tenant2,
+            role='client',
+            is_active=True,
+        )
+
+        middleware = self._middleware()
+        request = RequestFactory().get(path='/api/v1/client/profile')
+        request.user = self.user
+        request.headers = {}
+
+        response = middleware(request)
+        self.assertEqual(response.status_code, 403)
+
+    def test_user_with_multiple_memberships_valid_header(self):
+        """User with multiple memberships + valid header gets tenant."""
+        tenant2 = Tenant.objects.create(
+            name='Tenant 2',
+            slug='tenant-2',
+            email='tenant2@test.com',
+            is_active=True,
+        )
+        TenantMembership.objects.create(
+            user=self.user,
+            tenant=tenant2,
+            role='client',
+            is_active=True,
+        )
+
+        middleware = self._middleware()
+        request = RequestFactory().get(path='/api/v1/client/profile')
+        request.user = self.user
+        request.headers = {'X-Tenant-ID': str(tenant2.id)}
+
+        response = middleware(request)
+        self.assertEqual(request.tenant, tenant2)
+
+    def test_is_public_path_with_auth_endpoint(self):
+        """_is_public_path recognizes auth endpoints."""
+        middleware = self._middleware()
+        self.assertTrue(middleware._is_public_path('/api/v1/auth/login'))
+        self.assertTrue(middleware._is_public_path('/api/v1/auth/register'))
+
+    def test_is_public_path_with_public_endpoints(self):
+        """_is_public_path recognizes public endpoints."""
+        middleware = self._middleware()
+        self.assertTrue(middleware._is_public_path('/api/v1/public/properties'))
+        self.assertTrue(middleware._is_public_path('/api/v1/catalogs/'))
+
+    def test_is_public_path_with_private_endpoints(self):
+        """_is_public_path rejects private endpoints."""
+        middleware = self._middleware()
+        self.assertFalse(middleware._is_public_path('/api/v1/client/profile'))
+        self.assertFalse(middleware._is_public_path('/api/v1/admin/users'))
+
+
+# ── Tests for Utility Functions ────────────────────────────────────────
+
+class TestGenerateMatricula(TestCase):
+    """Test generate_matricula function."""
+
+    def setUp(self):
+        self.tenant = Tenant.objects.create(
+            name='Test Tenant',
+            slug='test-tenant',
+            email='test@test.com',
+            is_active=True,
+        )
+
+    def test_generate_first_matricula(self):
+        """First matricula of the year is CLI-YYYY-001."""
+        matricula = generate_matricula(self.tenant.id)
+        year = date.today().year
+        expected = f'CLI-{year}-001'
+        self.assertEqual(matricula, expected)
+
+    def test_generate_consecutive_matriculas(self):
+        """Consecutive matriculas increment."""
+        year = date.today().year
+        user = User.objects.create(email='test@test.com', is_active=True)
+        membership = TenantMembership.objects.create(
+            user=user,
+            tenant=self.tenant,
+            role='agent',
+            is_active=True,
+        )
+
+        m1 = generate_matricula(self.tenant.id)
+        Appointment.objects.create(
+            tenant=self.tenant,
+            matricula=m1,
+            agent_membership=membership,
+            scheduled_at='2026-03-14 10:00',
+        )
+
+        m2 = generate_matricula(self.tenant.id)
+        self.assertEqual(m2, f'CLI-{year}-002')
+
+    def test_generate_matricula_skips_invalid_format(self):
+        """Invalid matricula formats are ignored."""
+        year = date.today().year
+        user = User.objects.create(email='test2@test.com', is_active=True)
+        membership = TenantMembership.objects.create(
+            user=user,
+            tenant=self.tenant,
+            role='agent',
+            is_active=True,
+        )
+
+        # Create invalid matricula
+        Appointment.objects.create(
+            tenant=self.tenant,
+            matricula=f'CLI-{year}-INVALID',
+            agent_membership=membership,
+            scheduled_at='2026-03-14 10:00',
+        )
+
+        # Valid matricula should still start from 001
+        m = generate_matricula(self.tenant.id)
+        self.assertEqual(m, f'CLI-{year}-001')
+
+
+class TestCalculateTrend(TestCase):
+    """Test calculate_trend function."""
+
+    def test_trend_stable_both_zero(self):
+        """Trend is stable when both periods have 0 views."""
+        result = calculate_trend(views_last_7=0, views_prev_7=0)
+        self.assertEqual(result, 'stable')
+
+    def test_trend_up_from_zero(self):
+        """Trend is up when going from 0 to positive."""
+        result = calculate_trend(views_last_7=5, views_prev_7=0)
+        self.assertEqual(result, 'up')
+
+    def test_trend_up_increased_views(self):
+        """Trend is up when views increased."""
+        result = calculate_trend(views_last_7=10, views_prev_7=5)
+        self.assertEqual(result, 'up')
+
+    def test_trend_down_decreased_views(self):
+        """Trend is down when views decreased."""
+        result = calculate_trend(views_last_7=3, views_prev_7=10)
+        self.assertEqual(result, 'down')
+
+    def test_trend_stable_same_views(self):
+        """Trend is stable when views stayed same."""
+        result = calculate_trend(views_last_7=5, views_prev_7=5)
+        self.assertEqual(result, 'stable')
+
+    def test_trend_large_increase(self):
+        """Trend handles large increases."""
+        result = calculate_trend(views_last_7=1000, views_prev_7=100)
+        self.assertEqual(result, 'up')
+
+    def test_trend_to_zero(self):
+        """Trend is down when views went to zero."""
+        result = calculate_trend(views_last_7=0, views_prev_7=5)
+        self.assertEqual(result, 'down')
+
+
+class TestDaysListed(TestCase):
+    """Test days_listed function."""
+
+    def test_days_listed_today(self):
+        """Property listed today has 0 days."""
+        now = datetime.now()
+        result = days_listed(now)
+        self.assertEqual(result, 0)
+
+    def test_days_listed_yesterday(self):
+        """Property listed yesterday has 1 day."""
+        yesterday = datetime.now() - timedelta(days=1)
+        result = days_listed(yesterday)
+        self.assertEqual(result, 1)
+
+    def test_days_listed_one_week(self):
+        """Property listed 7 days ago has 7 days."""
+        week_ago = datetime.now() - timedelta(days=7)
+        result = days_listed(week_ago)
+        self.assertEqual(result, 7)
+
+    def test_days_listed_one_month(self):
+        """Property listed 30 days ago has 30 days."""
+        month_ago = datetime.now() - timedelta(days=30)
+        result = days_listed(month_ago)
+        self.assertEqual(result, 30)
+
+    def test_days_listed_with_datetime_object(self):
+        """days_listed extracts date from datetime."""
+        dt = datetime(2026, 2, 13, 15, 30, 45)
+        result = days_listed(dt)
+        expected = (date.today() - dt.date()).days
+        self.assertEqual(result, expected)

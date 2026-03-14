@@ -369,7 +369,7 @@ class AdminSellerLeadConvertView(APIView):
     permission_classes = [IsAuthenticated, IsAdmin]
 
     def post(self, request, pk):
-        lead = SellerLead.objects.filter(pk=pk, tenant=request.tenant).first()
+        lead = SellerLead.objects.select_related('created_by_membership').filter(pk=pk, tenant=request.tenant).first()
         if not lead:
             return Response({'error': 'Seller lead no encontrado.'}, status=404)
 

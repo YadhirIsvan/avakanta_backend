@@ -48,7 +48,18 @@ def _exe_file(name='malware.exe'):
 
 
 def _fake_image(name='photo.jpg'):
-    return SimpleUploadedFile(name, b'\xff\xd8\xff\xe0', content_type='image/jpeg')
+    # JPEG magic bytes + minimal valid JPEG structure
+    return SimpleUploadedFile(name, b'\xff\xd8\xff\xe0\x00\x10JFIF\x00\x00', content_type='image/jpeg')
+
+
+def _fake_png(name='photo.png'):
+    # PNG magic bytes + minimal valid PNG structure
+    return SimpleUploadedFile(name, b'\x89PNG\r\n\x1a\n\x00\x00\x00\rIHDR', content_type='image/png')
+
+
+def _fake_webp(name='photo.webp'):
+    # WebP magic bytes
+    return SimpleUploadedFile(name, b'RIFF\x00\x00\x00\x00WEBP', content_type='image/webp')
 
 
 def _fake_pdf(name='doc.pdf'):
@@ -61,15 +72,15 @@ class TestValidateFileType(TestCase):
     """validate_file_type: tipos permitidos pasan, el resto lanza ValidationError."""
 
     def test_valid_jpeg_image_passes(self):
-        f = SimpleUploadedFile('img.jpg', b'data', content_type='image/jpeg')
+        f = _fake_image()
         validate_file_type(f, ALLOWED_IMAGE_TYPES)  # no debe lanzar
 
     def test_valid_png_image_passes(self):
-        f = SimpleUploadedFile('img.png', b'data', content_type='image/png')
+        f = _fake_png()
         validate_file_type(f, ALLOWED_IMAGE_TYPES)
 
     def test_valid_webp_image_passes(self):
-        f = SimpleUploadedFile('img.webp', b'data', content_type='image/webp')
+        f = _fake_webp()
         validate_file_type(f, ALLOWED_IMAGE_TYPES)
 
     def test_exe_image_raises_validation_error(self):

@@ -10,3 +10,4 @@ python-decouple==3.8
 dj-database-url==2.3.0
 google-auth==2.38.0
 requests==2.32.3
+coverage==7.13.4

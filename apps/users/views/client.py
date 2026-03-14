@@ -255,10 +255,7 @@ class ClientFinancialProfileView(APIView):
             profile = ClientFinancialProfile.objects.get(membership=membership)
             return Response(ClientFinancialProfileSerializer(profile).data)
         except ClientFinancialProfile.DoesNotExist:
-            return Response(
-                {'error': 'No financial profile found'},
-                status=status.HTTP_404_NOT_FOUND
-            )
+            return Response(None)
 
     def post(self, request):
         """POST: crear perfil financiero (primera vez)"""

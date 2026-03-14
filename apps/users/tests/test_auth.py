@@ -1,4 +1,5 @@
 from datetime import timedelta
+from unittest.mock import patch
 
 from django.utils import timezone
 from django.test import override_settings
@@ -17,7 +18,10 @@ LOGOUT_URL = '/api/v1/auth/logout'
 REFRESH_URL = '/api/v1/auth/refresh'
 
 
-@override_settings(EMAIL_BACKEND='django.core.mail.backends.locmem.EmailBackend')
+@override_settings(
+    EMAIL_BACKEND='django.core.mail.backends.locmem.EmailBackend',
+    REST_FRAMEWORK={'DEFAULT_THROTTLE_CLASSES': ['rest_framework.throttling.AnonRateThrottle', 'rest_framework.throttling.UserRateThrottle', 'rest_framework.throttling.ScopedRateThrottle'], 'DEFAULT_THROTTLE_RATES': {}},
+)
 class OTPAuthTestCase(APITestCase):
     """Tests for the full OTP authentication flow."""
 
@@ -150,7 +154,8 @@ class OTPAuthTestCase(APITestCase):
         }, format='json')
         self.assertTrue(User.objects.filter(email='newuser@test.com').exists())
 
-    def test_register_saves_first_and_last_name(self):
+    @patch('rest_framework.throttling.ScopedRateThrottle.allow_request', return_value=True)
+    def test_register_saves_first_and_last_name(self, mock_throttle):
         """first_name y last_name se persisten correctamente."""
         self.client.post(REGISTER_URL, {
             'email': 'named@test.com',
@@ -187,14 +192,16 @@ class OTPAuthTestCase(APITestCase):
         self.assertEqual(resp.status_code, 400)
         self.assertIn('El usuario ya existe', resp.data['error'])
 
-    def test_register_without_required_fields_returns_400(self):
+    @patch('rest_framework.throttling.ScopedRateThrottle.allow_request', return_value=True)
+    def test_register_without_required_fields_returns_400(self, mock_throttle):
         """Omitir first_name o last_name retorna 400."""
         resp = self.client.post(REGISTER_URL, {
             'email': 'incomplete@test.com',
         }, format='json')
         self.assertEqual(resp.status_code, 400)
 
-    def test_register_sends_otp_email(self):
+    @patch('rest_framework.throttling.ScopedRateThrottle.allow_request', return_value=True)
+    def test_register_sends_otp_email(self, mock_throttle):
         """Se envía un OTP al email tras el registro."""
         from django.core import mail
         resp = self.client.post(REGISTER_URL, {
