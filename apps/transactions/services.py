@@ -33,8 +33,9 @@ def update_purchase_process_status(process, new_status, notes, changed_by_member
 
     process.status = new_status
     process.overall_progress = PURCHASE_PROGRESS_MAP.get(new_status, 0)
+    process.notes = notes or ''
 
-    update_fields = ['status', 'overall_progress', 'updated_at']
+    update_fields = ['status', 'overall_progress', 'updated_at', 'notes']
 
     if new_status == PurchaseProcess.Status.CERRADO:
         process.sale_price = sale_price
@@ -65,7 +66,8 @@ def update_sale_process_status(process, new_status, notes, changed_by_membership
     previous_status = process.status
 
     process.status = new_status
-    process.save(update_fields=['status', 'updated_at'])
+    process.notes = notes or ''
+    process.save(update_fields=['status', 'updated_at', 'notes'])
 
     ProcessStatusHistory.objects.create(
         process_type=ProcessStatusHistory.ProcessType.SALE,
@@ -107,9 +109,10 @@ def convert_seller_lead(lead, agent_membership):
     client_membership = lead.created_by_membership
 
     # 3. Generate property title based on location and type
-    location = lead.location or 'Propiedad'
-    property_type_display = lead.property_type.capitalize()
-    title = f'{property_type_display} en {location}'
+    if lead.location:
+        title = f'{lead.property_type.capitalize()} en {lead.location}'
+    else:
+        title = lead.full_name
 
     # 4. Find City by name (location)
     city = None

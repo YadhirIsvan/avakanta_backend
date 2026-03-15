@@ -86,7 +86,7 @@ class AdminTransactionsTestSetup(APITestCase):
         # Create properties
         self.prop1 = Property.objects.create(
             tenant=self.tenant, title='Property 1',
-            listing_type='sale', status='disponible',
+            listing_type='pending_listing', status='disponible',
             property_type='house', price=1_000_000,
         )
 

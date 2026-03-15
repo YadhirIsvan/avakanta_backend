@@ -302,8 +302,14 @@ class ClientSavedPropertySerializerTests(APITestCase):
         serializer = ClientSavedPropertySerializer(
             self.saved, context={'request': self.factory.get('/')}
         )
-        # saved_at should match created_at
-        self.assertEqual(serializer.data['saved_at'], self.saved.created_at.isoformat())
+        # saved_at should match created_at (compare datetime objects, not strings due to timezone differences)
+        from datetime import datetime
+        saved_at_str = serializer.data['saved_at']
+        created_at_str = self.saved.created_at.isoformat()
+        # Parse both as datetime and compare
+        saved_at_dt = datetime.fromisoformat(saved_at_str)
+        created_at_dt = datetime.fromisoformat(created_at_str)
+        self.assertEqual(saved_at_dt.timestamp(), created_at_dt.timestamp())
 
     def test_serializer_property_field_structure(self):
         """Test that property field contains all expected subfields."""

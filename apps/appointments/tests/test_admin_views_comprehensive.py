@@ -597,7 +597,7 @@ class TestAdminAppointmentListCreate(AdminAppointmentsTestSetup):
         """POST creates appointment."""
         tomorrow = date.today() + timedelta(days=1)
 
-        # Create schedule so slot is available
+        # Create schedule so slot is available (all days of week)
         schedule = AgentSchedule.objects.create(
             tenant=self.tenant,
             agent_membership=self.agent1_membership,
@@ -607,6 +607,8 @@ class TestAdminAppointmentListCreate(AdminAppointmentsTestSetup):
             wednesday=True,
             thursday=True,
             friday=True,
+            saturday=True,
+            sunday=True,
             start_time=time(9, 0),
             end_time=time(18, 0),
         )
