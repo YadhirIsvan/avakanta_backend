@@ -1,8 +1,29 @@
-echo "__pycache__/
+venv/
+.venv/
+__pycache__/
 *.pyc
 *.pyo
+
+# Secretos — NUNCA commitear
 .env
-.venv/
+
+# Archivos generados en runtime
 media/
+staticfiles/
+
+# Base de datos local
 *.sqlite3
-db.sqlite3" > .gitignore.coverage
+db.sqlite3
+
+# Tests y cobertura
+.coverage
+coverage.json
+htmlcov/
+.pytest_cache/
+
+# macOS
+.DS_Store
+
+# IDEs
+.idea/
+.vscode/
