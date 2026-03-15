@@ -5,4 +5,4 @@ echo "__pycache__/
 .venv/
 media/
 *.sqlite3
-db.sqlite3" > .gitignore
+db.sqlite3" > .gitignore.coverage
