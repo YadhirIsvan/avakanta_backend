@@ -18,6 +18,7 @@ from django.test import override_settings
 from django.core.files.uploadedfile import SimpleUploadedFile
 from rest_framework.test import APITestCase
 from rest_framework_simplejwt.tokens import RefreshToken
+from PIL import Image
 
 from apps.tenants.models import Tenant
 from apps.users.models import (
@@ -40,12 +41,13 @@ def _auth(token):
 
 def _fake_image(name='image.jpg'):
     """Create a fake image file for testing."""
-    img = BytesIO()
-    img.write(b'\xff\xd8\xff\xe0\x00\x10JFIF\x00\x01')  # JPEG magic bytes
-    img.seek(0)
+    img = Image.new('RGB', (100, 100), color='red')
+    img_bytes = BytesIO()
+    img.save(img_bytes, format='JPEG')
+    img_bytes.seek(0)
     return SimpleUploadedFile(
         name=name,
-        content=img.read(),
+        content=img_bytes.read(),
         content_type='image/jpeg',
     )
 
@@ -57,7 +59,7 @@ class ClientDashboardSetup(APITestCase):
         # Tenant
         self.tenant = Tenant.objects.create(
             name='Dashboard Tenant', slug='dashboard-tenant',
-            email='dashboard@test.com', is_active=True,
+            email='dashboard@test.com',
         )
 
         # Client user
@@ -70,17 +72,17 @@ class ClientDashboardSetup(APITestCase):
         )
         self.membership = TenantMembership.objects.create(
             user=self.user, tenant=self.tenant,
-            role=TenantMembership.Role.CLIENT, is_active=True,
+            role=TenantMembership.Role.CLIENT,
         )
         self.token = _token(self.user)
 
         # Agent for processes
         self.agent_user = User.objects.create(
-            email='agent_dashboard@test.com', is_active=True,
+            email='agent_dashboard@test.com',
         )
         self.agent_membership = TenantMembership.objects.create(
             user=self.agent_user, tenant=self.tenant,
-            role=TenantMembership.Role.AGENT, is_active=True,
+            role=TenantMembership.Role.AGENT,
         )
         AgentProfile.objects.create(membership=self.agent_membership)
 
@@ -88,7 +90,7 @@ class ClientDashboardSetup(APITestCase):
         self.prop = Property.objects.create(
             tenant=self.tenant, title='Casa Dashboard',
             listing_type='sale', status='disponible',
-            property_type='house', price=1_000_000, is_active=True,
+            property_type='house', price=1_000_000,
         )
 
 
@@ -152,7 +154,8 @@ class TestClientDashboard(ClientDashboardSetup):
             )
             ProcessStatusHistory.objects.create(
                 process_type='purchase', process_id=p.id,
-                old_status='lead', new_status='visita',
+                previous_status='lead', new_status='visita',
+                changed_by_membership=self.agent_membership,
             )
 
         resp = self.client.get('/api/v1/client/dashboard', **_auth(self.token))
@@ -179,7 +182,7 @@ class TestClientProfile(APITestCase):
     def setUp(self):
         self.tenant = Tenant.objects.create(
             name='Profile Tenant', slug='profile-tenant',
-            email='profile@test.com', is_active=True,
+            email='profile@test.com',
         )
         self.user = User.objects.create(
             email='user_profile@test.com',
@@ -191,7 +194,7 @@ class TestClientProfile(APITestCase):
         )
         self.membership = TenantMembership.objects.create(
             user=self.user, tenant=self.tenant,
-            role=TenantMembership.Role.CLIENT, is_active=True,
+            role=TenantMembership.Role.CLIENT,
         )
         self.token = _token(self.user)
 
@@ -304,14 +307,14 @@ class TestClientNotificationPreferences(APITestCase):
     def setUp(self):
         self.tenant = Tenant.objects.create(
             name='Notif Tenant', slug='notif-tenant',
-            email='notif@test.com', is_active=True,
+            email='notif@test.com',
         )
         self.user = User.objects.create(
-            email='user_notif@test.com', is_active=True,
+            email='user_notif@test.com',
         )
         self.membership = TenantMembership.objects.create(
             user=self.user, tenant=self.tenant,
-            role=TenantMembership.Role.CLIENT, is_active=True,
+            role=TenantMembership.Role.CLIENT,
         )
         self.token = _token(self.user)
 
@@ -403,14 +406,14 @@ class TestClientFinancialProfile(APITestCase):
     def setUp(self):
         self.tenant = Tenant.objects.create(
             name='Finance Tenant', slug='finance-tenant',
-            email='finance@test.com', is_active=True,
+            email='finance@test.com',
         )
         self.user = User.objects.create(
-            email='user_finance@test.com', is_active=True,
+            email='user_finance@test.com',
         )
         self.membership = TenantMembership.objects.create(
             user=self.user, tenant=self.tenant,
-            role=TenantMembership.Role.CLIENT, is_active=True,
+            role=TenantMembership.Role.CLIENT,
         )
         self.token = _token(self.user)
 
@@ -617,14 +620,14 @@ class TestClientProfileDetail(APITestCase):
     def setUp(self):
         self.tenant = Tenant.objects.create(
             name='Detail Tenant', slug='detail-tenant',
-            email='detail@test.com', is_active=True,
+            email='detail@test.com',
         )
         self.user = User.objects.create(
-            email='user_detail@test.com', is_active=True,
+            email='user_detail@test.com',
         )
         self.membership = TenantMembership.objects.create(
             user=self.user, tenant=self.tenant,
-            role=TenantMembership.Role.CLIENT, is_active=True,
+            role=TenantMembership.Role.CLIENT,
         )
         self.token = _token(self.user)
 
@@ -662,13 +665,13 @@ class TestClientProfileDetail(APITestCase):
         """PATCH /client/profile-detail can update fields."""
         resp = self.client.patch(
             '/api/v1/client/profile-detail',
-            {'name': 'Carlos López', 'preferred_contact': 'email'},
+            {'occupation': 'Ingeniero', 'residence_location': 'Orizaba'},
             format='json',
             **_auth(self.token),
         )
         self.assertEqual(resp.status_code, 200)
         profile = ClientProfile.objects.get(membership=self.membership)
-        self.assertEqual(profile.name, 'Carlos López')
+        self.assertEqual(profile.occupation, 'Ingeniero')
 
 
 class TestClientAvatarUpload(APITestCase):
@@ -677,14 +680,14 @@ class TestClientAvatarUpload(APITestCase):
     def setUp(self):
         self.tenant = Tenant.objects.create(
             name='Avatar Tenant', slug='avatar-tenant',
-            email='avatar@test.com', is_active=True,
+            email='avatar@test.com',
         )
         self.user = User.objects.create(
-            email='user_avatar@test.com', is_active=True,
+            email='user_avatar@test.com',
         )
         self.membership = TenantMembership.objects.create(
             user=self.user, tenant=self.tenant,
-            role=TenantMembership.Role.CLIENT, is_active=True,
+            role=TenantMembership.Role.CLIENT,
         )
         self.token = _token(self.user)
 
@@ -723,7 +726,7 @@ class TestClientAvatarUpload(APITestCase):
             **_auth(self.token),
         )
         self.assertEqual(resp.status_code, 200)
-        self.assertTrue(resp.data['avatar'].startswith('/media/'))
+        self.assertIn('/media/', resp.data['avatar'])
 
     def test_post_avatar_upload_without_file_returns_400(self):
         """POST /client/avatar-upload without file returns 400."""

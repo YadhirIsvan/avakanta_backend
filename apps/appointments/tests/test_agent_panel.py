@@ -35,23 +35,23 @@ class AgentAppointmentPanelSetup(APITestCase):
     def setUp(self):
         self.tenant = Tenant.objects.create(
             name='AgentAppt Tenant', slug='agentappt-tenant',
-            email='agentappt@test.com', is_active=True,
+            email='agentappt@test.com',
         )
 
         # Agente A
-        user_a = User.objects.create(email='agentappt_a@test.com', is_active=True)
+        user_a = User.objects.create(email='agentappt_a@test.com')
         self.agent_m_a = TenantMembership.objects.create(
             user=user_a, tenant=self.tenant,
-            role=TenantMembership.Role.AGENT, is_active=True,
+            role=TenantMembership.Role.AGENT,
         )
         AgentProfile.objects.create(membership=self.agent_m_a)
         self.token_a = _token(user_a)
 
         # Agente B
-        user_b = User.objects.create(email='agentappt_b@test.com', is_active=True)
+        user_b = User.objects.create(email='agentappt_b@test.com')
         self.agent_m_b = TenantMembership.objects.create(
             user=user_b, tenant=self.tenant,
-            role=TenantMembership.Role.AGENT, is_active=True,
+            role=TenantMembership.Role.AGENT,
         )
         AgentProfile.objects.create(membership=self.agent_m_b)
         self.token_b = _token(user_b)
@@ -60,7 +60,7 @@ class AgentAppointmentPanelSetup(APITestCase):
         self.prop = Property.objects.create(
             tenant=self.tenant, title='Casa citas',
             listing_type='sale', status='disponible',
-            property_type='house', price=1_000_000, is_active=True,
+            property_type='house', price=1_000_000,
         )
 
         # Cita de agente A (estado inicial: programada)

@@ -34,7 +34,7 @@ class SavedPropertySetup(APITestCase):
         # Tenant
         self.tenant = Tenant.objects.create(
             name='Property Tenant', slug='property-tenant',
-            email='property@test.com', is_active=True,
+            email='property@test.com',
         )
 
         # Location setup
@@ -50,17 +50,17 @@ class SavedPropertySetup(APITestCase):
         )
         self.membership = TenantMembership.objects.create(
             user=self.user, tenant=self.tenant,
-            role=TenantMembership.Role.CLIENT, is_active=True,
+            role=TenantMembership.Role.CLIENT,
         )
         self.token = _token(self.user)
 
         # Other client for isolation tests
         self.other_user = User.objects.create(
-            email='other_client_properties@test.com', is_active=True,
+            email='other_client_properties@test.com',
         )
         self.other_membership = TenantMembership.objects.create(
             user=self.other_user, tenant=self.tenant,
-            role=TenantMembership.Role.CLIENT, is_active=True,
+            role=TenantMembership.Role.CLIENT,
         )
 
         # Properties (sale listing)
@@ -68,18 +68,18 @@ class SavedPropertySetup(APITestCase):
             tenant=self.tenant, title='Casa 1',
             listing_type='sale', status='disponible',
             property_type='house', price=Decimal('1000000'),
-            city=self.city, is_active=True,
+            city=self.city,
         )
         PropertyImage.objects.create(
             property=self.prop1, image_url='http://example.com/image1.jpg',
-            is_cover=True, is_active=True,
+            is_cover=True,
         )
 
         self.prop2 = Property.objects.create(
             tenant=self.tenant, title='Casa 2',
             listing_type='sale', status='disponible',
             property_type='house', price=Decimal('2000000'),
-            city=self.city, is_active=True,
+            city=self.city,
         )
 
         # Property with pending listing (should not be saveable)
@@ -87,7 +87,7 @@ class SavedPropertySetup(APITestCase):
             tenant=self.tenant, title='Casa Pending',
             listing_type='pending_listing', status='disponible',
             property_type='house', price=Decimal('1500000'),
-            city=self.city, is_active=True,
+            city=self.city,
         )
 
         # Inactive property (should not be saveable)

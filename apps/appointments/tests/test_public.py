@@ -30,7 +30,7 @@ class AppointmentSlotsTestCase(APITestCase):
     def setUp(self):
         self.tenant = Tenant.objects.create(
             name='Slots Tenant', slug='slots-tenant',
-            email='slots@test.com', is_active=True,
+            email='slots@test.com',
         )
         AppointmentSettings.objects.create(
             tenant=self.tenant,
@@ -42,12 +42,12 @@ class AppointmentSlotsTestCase(APITestCase):
         self.prop = Property.objects.create(
             tenant=self.tenant, title='Casa slots',
             listing_type='sale', status='disponible',
-            property_type='house', price=1_000_000, is_active=True,
+            property_type='house', price=1_000_000,
         )
-        agent_user = User.objects.create(email='agent_slots@test.com', is_active=True)
+        agent_user = User.objects.create(email='agent_slots@test.com')
         self.agent_m = TenantMembership.objects.create(
             user=agent_user, tenant=self.tenant,
-            role=TenantMembership.Role.AGENT, is_active=True,
+            role=TenantMembership.Role.AGENT,
         )
         AgentProfile.objects.create(membership=self.agent_m)
         PropertyAssignment.objects.create(
@@ -58,7 +58,7 @@ class AppointmentSlotsTestCase(APITestCase):
             tenant=self.tenant, agent_membership=self.agent_m,
             name='Lunes', monday=True,
             start_time='09:00', end_time='17:00',
-            has_lunch_break=False, is_active=True,
+            has_lunch_break=False,
         )
         self.target_date = _next_monday()
 
@@ -90,7 +90,7 @@ class CreateAppointmentTestCase(APITestCase):
     def setUp(self):
         self.tenant = Tenant.objects.create(
             name='Book Tenant', slug='book-tenant',
-            email='book@test.com', is_active=True,
+            email='book@test.com',
         )
         AppointmentSettings.objects.create(
             tenant=self.tenant,
@@ -102,12 +102,12 @@ class CreateAppointmentTestCase(APITestCase):
         self.prop = Property.objects.create(
             tenant=self.tenant, title='Casa reserva',
             listing_type='sale', status='disponible',
-            property_type='house', price=1_000_000, is_active=True,
+            property_type='house', price=1_000_000,
         )
-        agent_user = User.objects.create(email='agent_book@test.com', is_active=True)
+        agent_user = User.objects.create(email='agent_book@test.com')
         self.agent_m = TenantMembership.objects.create(
             user=agent_user, tenant=self.tenant,
-            role=TenantMembership.Role.AGENT, is_active=True,
+            role=TenantMembership.Role.AGENT,
         )
         AgentProfile.objects.create(membership=self.agent_m)
         PropertyAssignment.objects.create(
@@ -117,7 +117,7 @@ class CreateAppointmentTestCase(APITestCase):
             tenant=self.tenant, agent_membership=self.agent_m,
             name='Lunes', monday=True,
             start_time='09:00', end_time='17:00',
-            has_lunch_break=False, is_active=True,
+            has_lunch_break=False,
         )
         self.target_date = _next_monday()
         self.valid_slot = '09:00'
@@ -158,7 +158,7 @@ class CreateAppointmentTestCase(APITestCase):
         prop_no_agent = Property.objects.create(
             tenant=self.tenant, title='Sin agente',
             listing_type='sale', status='disponible',
-            property_type='house', price=500_000, is_active=True,
+            property_type='house', price=500_000,
         )
         resp = self.client.post(_book_url(prop_no_agent.pk), {
             'date': str(self.target_date),

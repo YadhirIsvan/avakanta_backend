@@ -183,7 +183,7 @@ class OTPAuthTestCase(APITestCase):
 
     def test_register_existing_user_returns_400(self):
         """Registrar un email ya existente retorna 400."""
-        User.objects.create(email='existing@test.com', is_active=True)
+        User.objects.create(email='existing@test.com')
         resp = self.client.post(REGISTER_URL, {
             'email': 'existing@test.com',
             'first_name': 'X',

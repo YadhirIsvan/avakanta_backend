@@ -38,7 +38,7 @@ class AvailabilityServiceTestCase(TestCase):
     def setUp(self):
         self.tenant = Tenant.objects.create(
             name='Avail Tenant', slug='avail-tenant',
-            email='avail@test.com', is_active=True,
+            email='avail@test.com',
         )
         self.settings = AppointmentSettings.objects.create(
             tenant=self.tenant,
@@ -47,16 +47,16 @@ class AvailabilityServiceTestCase(TestCase):
             day_end_time='17:00',
             min_advance_hours=0,   # sin filtro de anticipación para la mayoría de tests
         )
-        agent_user = User.objects.create(email='agent_avail@test.com', is_active=True)
+        agent_user = User.objects.create(email='agent_avail@test.com')
         self.agent_m = TenantMembership.objects.create(
             user=agent_user, tenant=self.tenant,
-            role=TenantMembership.Role.AGENT, is_active=True,
+            role=TenantMembership.Role.AGENT,
         )
         AgentProfile.objects.create(membership=self.agent_m)
         self.prop = Property.objects.create(
             tenant=self.tenant, title='Casa Avail',
             listing_type='sale', status='disponible',
-            property_type='house', price=1_000_000, is_active=True,
+            property_type='house', price=1_000_000,
         )
         PropertyAssignment.objects.create(
             property=self.prop, agent_membership=self.agent_m, is_visible=True,
@@ -70,7 +70,7 @@ class AvailabilityServiceTestCase(TestCase):
             tenant=self.tenant, agent_membership=self.agent_m,
             name='Lunes', monday=True,
             start_time='09:00', end_time='17:00',
-            has_lunch_break=False, is_active=True,
+            has_lunch_break=False,
         )
         defaults.update(kwargs)
         return AgentSchedule.objects.create(**defaults)
@@ -89,7 +89,7 @@ class AvailabilityServiceTestCase(TestCase):
             tenant=self.tenant, agent_membership=self.agent_m,
             name='Martes', tuesday=True,
             start_time='09:00', end_time='17:00',
-            has_lunch_break=False, is_active=True,
+            has_lunch_break=False,
         )
         result = self.svc.get_available_slots(self.prop.pk, self.target)
         self.assertEqual(result['available_slots'], [])
@@ -229,7 +229,7 @@ class AvailabilityServiceTestCase(TestCase):
             name='Hoy',
             **{_weekday_field(date.today()): True},
             start_time='09:00', end_time='17:00',
-            has_lunch_break=False, is_active=True,
+            has_lunch_break=False,
         )
         result = self.svc.get_available_slots(self.prop.pk, date.today())
         self.assertEqual(result['available_slots'], [])
@@ -248,7 +248,7 @@ class AvailabilityServiceTestCase(TestCase):
         prop_no_agent = Property.objects.create(
             tenant=self.tenant, title='Sin agente',
             listing_type='sale', status='disponible',
-            property_type='house', price=500_000, is_active=True,
+            property_type='house', price=500_000,
         )
         result = self.svc.get_available_slots(prop_no_agent.pk, self.target)
         self.assertIsNone(result['agent'])

@@ -27,7 +27,7 @@ class ClientProfilePanelSetup(APITestCase):
     def setUp(self):
         self.tenant = Tenant.objects.create(
             name='Profile Tenant', slug='profile-tenant',
-            email='profile@test.com', is_active=True,
+            email='profile@test.com',
         )
         self.user = User.objects.create(
             email='client_profile@test.com',
@@ -37,7 +37,7 @@ class ClientProfilePanelSetup(APITestCase):
         )
         self.membership = TenantMembership.objects.create(
             user=self.user, tenant=self.tenant,
-            role=TenantMembership.Role.CLIENT, is_active=True,
+            role=TenantMembership.Role.CLIENT,
         )
         self.token = _token(self.user)
 

@@ -33,22 +33,22 @@ class SalePipelineSetup(APITestCase):
     def setUp(self):
         self.tenant = Tenant.objects.create(
             name='Sale Tenant', slug='sale-tenant',
-            email='sale@test.com', is_active=True,
+            email='sale@test.com',
         )
 
         # Admin
-        self.admin_user = User.objects.create(email='admin_sale@test.com', is_active=True)
+        self.admin_user = User.objects.create(email='admin_sale@test.com')
         self.admin_m = TenantMembership.objects.create(
             user=self.admin_user, tenant=self.tenant,
-            role=TenantMembership.Role.ADMIN, is_active=True,
+            role=TenantMembership.Role.ADMIN,
         )
         self.token = _token(self.admin_user)
 
         # Agent
-        agent_user = User.objects.create(email='agent_sale@test.com', is_active=True)
+        agent_user = User.objects.create(email='agent_sale@test.com')
         self.agent_m = TenantMembership.objects.create(
             user=agent_user, tenant=self.tenant,
-            role=TenantMembership.Role.AGENT, is_active=True,
+            role=TenantMembership.Role.AGENT,
         )
         AgentProfile.objects.create(membership=self.agent_m)
 
@@ -213,10 +213,10 @@ class TestSaleProcessPublicacion(SalePipelineSetup):
         super().setUp()
 
         # Client membership needed for SaleProcess
-        client_user = User.objects.create(email='client_sale@test.com', is_active=True)
+        client_user = User.objects.create(email='client_sale@test.com')
         self.client_m = TenantMembership.objects.create(
             user=client_user, tenant=self.tenant,
-            role=TenantMembership.Role.CLIENT, is_active=True,
+            role=TenantMembership.Role.CLIENT,
         )
 
         # Property in pending_listing (before publication)

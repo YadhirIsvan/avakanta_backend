@@ -62,37 +62,37 @@ class AdminPropertiesTestSetup(APITestCase):
         # Create tenant
         self.tenant = Tenant.objects.create(
             name='Properties Test', slug='prop-test',
-            email='prop@test.com', is_active=True,
+            email='prop@test.com',
         )
 
         # Create admin
-        self.admin = User.objects.create(email='admin@prop.com', is_active=True)
+        self.admin = User.objects.create(email='admin@prop.com')
         self.admin_m = TenantMembership.objects.create(
             user=self.admin, tenant=self.tenant,
-            role=TenantMembership.Role.ADMIN, is_active=True,
+            role=TenantMembership.Role.ADMIN,
         )
         self.token = _token(self.admin)
 
         # Create agents
-        self.agent1 = User.objects.create(email='agent1@prop.com', is_active=True, first_name='Carlos')
+        self.agent1 = User.objects.create(email='agent1@prop.com', first_name='Carlos')
         self.agent1_m = TenantMembership.objects.create(
             user=self.agent1, tenant=self.tenant,
-            role=TenantMembership.Role.AGENT, is_active=True,
+            role=TenantMembership.Role.AGENT,
         )
         self.agent1_profile = AgentProfile.objects.create(membership=self.agent1_m)
 
-        self.agent2 = User.objects.create(email='agent2@prop.com', is_active=True)
+        self.agent2 = User.objects.create(email='agent2@prop.com')
         self.agent2_m = TenantMembership.objects.create(
             user=self.agent2, tenant=self.tenant,
-            role=TenantMembership.Role.AGENT, is_active=True,
+            role=TenantMembership.Role.AGENT,
         )
         self.agent2_profile = AgentProfile.objects.create(membership=self.agent2_m)
 
         # Create non-admin user for permission tests
-        self.non_admin = User.objects.create(email='user@prop.com', is_active=True)
+        self.non_admin = User.objects.create(email='user@prop.com')
         self.non_admin_m = TenantMembership.objects.create(
             user=self.non_admin, tenant=self.tenant,
-            role=TenantMembership.Role.CLIENT, is_active=True,
+            role=TenantMembership.Role.CLIENT,
         )
         self.non_admin_token = _token(self.non_admin)
 
@@ -114,12 +114,12 @@ class TestAdminPropertyListCreate(AdminPropertiesTestSetup):
         Property.objects.create(
             tenant=self.tenant, title='House 1',
             listing_type='sale', status='disponible',
-            property_type='house', price=1_000_000, is_active=True,
+            property_type='house', price=1_000_000,
         )
         Property.objects.create(
             tenant=self.tenant, title='Apartment 1',
             listing_type='sale', status='disponible',
-            property_type='apartment', price=500_000, is_active=True,
+            property_type='apartment', price=500_000,
         )
 
         resp = self.client.get(
@@ -134,12 +134,12 @@ class TestAdminPropertyListCreate(AdminPropertiesTestSetup):
         Property.objects.create(
             tenant=self.tenant, title='Property 1',
             listing_type='sale', status='disponible',
-            property_type='house', price=1_000_000, is_active=True,
+            property_type='house', price=1_000_000,
         )
         Property.objects.create(
             tenant=self.tenant, title='Property 2',
             listing_type='sale', status='vendida',
-            property_type='house', price=1_000_000, is_active=True,
+            property_type='house', price=1_000_000,
         )
 
         resp = self.client.get(
@@ -154,12 +154,12 @@ class TestAdminPropertyListCreate(AdminPropertiesTestSetup):
         Property.objects.create(
             tenant=self.tenant, title='Property 1',
             listing_type='sale', status='disponible',
-            property_type='house', price=1_000_000, is_active=True,
+            property_type='house', price=1_000_000,
         )
         Property.objects.create(
             tenant=self.tenant, title='Property 2',
             listing_type='pending_listing', status='disponible',
-            property_type='house', price=1_000_000, is_active=True,
+            property_type='house', price=1_000_000,
         )
 
         resp = self.client.get(
@@ -174,12 +174,12 @@ class TestAdminPropertyListCreate(AdminPropertiesTestSetup):
         Property.objects.create(
             tenant=self.tenant, title='House 1',
             listing_type='sale', status='disponible',
-            property_type='house', price=1_000_000, is_active=True,
+            property_type='house', price=1_000_000,
         )
         Property.objects.create(
             tenant=self.tenant, title='Apartment 1',
             listing_type='sale', status='disponible',
-            property_type='apartment', price=500_000, is_active=True,
+            property_type='apartment', price=500_000,
         )
 
         resp = self.client.get(
@@ -194,7 +194,7 @@ class TestAdminPropertyListCreate(AdminPropertiesTestSetup):
         Property.objects.create(
             tenant=self.tenant, title='Beautiful House on Main St',
             listing_type='sale', status='disponible',
-            property_type='house', price=1_000_000, is_active=True,
+            property_type='house', price=1_000_000,
         )
 
         resp = self.client.get(
@@ -209,7 +209,7 @@ class TestAdminPropertyListCreate(AdminPropertiesTestSetup):
         Property.objects.create(
             tenant=self.tenant, title='House',
             listing_type='sale', status='disponible',
-            property_type='house', price=1_000_000, is_active=True,
+            property_type='house', price=1_000_000,
             address_street='Main Street',
         )
 
@@ -299,7 +299,7 @@ class TestAdminPropertyDetail(AdminPropertiesTestSetup):
             tenant=self.tenant, title='Test House',
             listing_type='sale', status='disponible',
             property_type='house', price=1_000_000,
-            bedrooms=3, bathrooms=2, is_active=True,
+            bedrooms=3, bathrooms=2,
         )
 
     def test_get_detail(self):
@@ -410,7 +410,7 @@ class TestAdminPropertyImage(AdminPropertiesTestSetup):
         self.prop = Property.objects.create(
             tenant=self.tenant, title='Test House',
             listing_type='sale', status='disponible',
-            property_type='house', price=1_000_000, is_active=True,
+            property_type='house', price=1_000_000,
         )
 
     @override_settings(MEDIA_ROOT='/tmp/test_media')
@@ -508,7 +508,7 @@ class TestAdminPropertyDocument(AdminPropertiesTestSetup):
         self.prop = Property.objects.create(
             tenant=self.tenant, title='Test House',
             listing_type='sale', status='disponible',
-            property_type='house', price=1_000_000, is_active=True,
+            property_type='house', price=1_000_000,
         )
 
     @override_settings(MEDIA_ROOT='/tmp/test_media')
@@ -569,7 +569,7 @@ class TestAdminPropertyToggleFeatured(AdminPropertiesTestSetup):
             tenant=self.tenant, title='Test House',
             listing_type='sale', status='disponible',
             property_type='house', price=1_000_000,
-            is_featured=False, is_active=True,
+            is_featured=False,
         )
 
     def test_toggle_to_featured(self):
@@ -618,12 +618,12 @@ class TestAdminAssignment(AdminPropertiesTestSetup):
         self.prop_sale = Property.objects.create(
             tenant=self.tenant, title='Sale Property',
             listing_type='sale', status='disponible',
-            property_type='house', price=1_000_000, is_active=True,
+            property_type='house', price=1_000_000,
         )
         self.prop_pending = Property.objects.create(
             tenant=self.tenant, title='Pending Property',
             listing_type='pending_listing', status='disponible',
-            property_type='house', price=1_000_000, is_active=True,
+            property_type='house', price=1_000_000,
         )
 
     def test_get_assignments_empty(self):
@@ -737,7 +737,7 @@ class TestAdminAssignmentDetail(AdminPropertiesTestSetup):
         self.prop = Property.objects.create(
             tenant=self.tenant, title='Test House',
             listing_type='sale', status='disponible',
-            property_type='house', price=1_000_000, is_active=True,
+            property_type='house', price=1_000_000,
         )
         self.assignment = PropertyAssignment.objects.create(
             property=self.prop,
@@ -809,13 +809,13 @@ class TestTenantIsolation(AdminPropertiesTestSetup):
         # Create second tenant with its own data
         self.tenant2 = Tenant.objects.create(
             name='Properties Test 2', slug='prop-test-2',
-            email='prop2@test.com', is_active=True,
+            email='prop2@test.com',
         )
 
-        admin2 = User.objects.create(email='admin2@prop.com', is_active=True)
+        admin2 = User.objects.create(email='admin2@prop.com')
         self.admin2_m = TenantMembership.objects.create(
             user=admin2, tenant=self.tenant2,
-            role=TenantMembership.Role.ADMIN, is_active=True,
+            role=TenantMembership.Role.ADMIN,
         )
         self.token2 = _token(admin2)
 
@@ -823,13 +823,13 @@ class TestTenantIsolation(AdminPropertiesTestSetup):
         self.prop_t1 = Property.objects.create(
             tenant=self.tenant, title='Property T1',
             listing_type='sale', status='disponible',
-            property_type='house', price=1_000_000, is_active=True,
+            property_type='house', price=1_000_000,
         )
 
         self.prop_t2 = Property.objects.create(
             tenant=self.tenant2, title='Property T2',
             listing_type='sale', status='disponible',
-            property_type='house', price=1_000_000, is_active=True,
+            property_type='house', price=1_000_000,
         )
 
     def test_admin_t1_cannot_see_t2_properties(self):

@@ -129,7 +129,7 @@ class CoverImageHelperFunctionTests(TestCase):
     def setUp(self):
         self.tenant = Tenant.objects.create(
             name='Image Tenant', slug='image-tenant',
-            email='image@test.com', is_active=True,
+            email='image@test.com',
         )
         self.country = Country.objects.create(name='Mexico')
         self.state = State.objects.create(name='Mexico City', country=self.country)
@@ -139,14 +139,14 @@ class CoverImageHelperFunctionTests(TestCase):
             tenant=self.tenant, title='Property with Cover',
             listing_type='sale', status='disponible',
             property_type='house', price=Decimal('1000000'),
-            city=self.city, is_active=True,
+            city=self.city,
         )
 
         self.prop_no_images = Property.objects.create(
             tenant=self.tenant, title='Property No Images',
             listing_type='sale', status='disponible',
             property_type='house', price=Decimal('1000000'),
-            city=self.city, is_active=True,
+            city=self.city,
         )
 
         self.factory = RequestFactory()
@@ -156,7 +156,7 @@ class CoverImageHelperFunctionTests(TestCase):
         image = PropertyImage.objects.create(
             property=self.prop_with_cover,
             image_url='https://example.com/image.jpg',
-            is_cover=True, is_active=True,
+            is_cover=True,
         )
         result = _cover_image(self.prop_with_cover)
         self.assertEqual(result, 'https://example.com/image.jpg')
@@ -166,7 +166,7 @@ class CoverImageHelperFunctionTests(TestCase):
         PropertyImage.objects.create(
             property=self.prop_with_cover,
             image_url='/media/properties/123/image.jpg',
-            is_cover=True, is_active=True,
+            is_cover=True,
         )
         request = self.factory.get('/')
         result = _cover_image(self.prop_with_cover, request)
@@ -178,7 +178,7 @@ class CoverImageHelperFunctionTests(TestCase):
         PropertyImage.objects.create(
             property=self.prop_with_cover,
             image_url='/media/properties/123/image.jpg',
-            is_cover=True, is_active=True,
+            is_cover=True,
         )
         result = _cover_image(self.prop_with_cover, request=None)
         # Should use the fallback BACKEND_URL
@@ -191,13 +191,13 @@ class CoverImageHelperFunctionTests(TestCase):
         PropertyImage.objects.create(
             property=self.prop_with_cover,
             image_url='https://example.com/first.jpg',
-            is_cover=False, sort_order=1, is_active=True,
+            is_cover=False, sort_order=1,
         )
         # Create cover image
         PropertyImage.objects.create(
             property=self.prop_with_cover,
             image_url='https://example.com/cover.jpg',
-            is_cover=True, is_active=True,
+            is_cover=True,
         )
         result = _cover_image(self.prop_with_cover)
         self.assertEqual(result, 'https://example.com/cover.jpg')
@@ -207,12 +207,12 @@ class CoverImageHelperFunctionTests(TestCase):
         PropertyImage.objects.create(
             property=self.prop_with_cover,
             image_url='https://example.com/second.jpg',
-            is_cover=False, sort_order=2, is_active=True,
+            is_cover=False, sort_order=2,
         )
         PropertyImage.objects.create(
             property=self.prop_with_cover,
             image_url='https://example.com/first.jpg',
-            is_cover=False, sort_order=1, is_active=True,
+            is_cover=False, sort_order=1,
         )
         result = _cover_image(self.prop_with_cover)
         self.assertEqual(result, 'https://example.com/first.jpg')
@@ -226,7 +226,7 @@ class CoverImageHelperFunctionTests(TestCase):
         """Test that None is returned when image_url is empty."""
         PropertyImage.objects.create(
             property=self.prop_with_cover,
-            image_url=None, is_cover=True, is_active=True,
+            image_url='', is_cover=True,
         )
         result = _cover_image(self.prop_with_cover)
         self.assertIsNone(result)
@@ -239,7 +239,7 @@ class ClientSavedPropertySerializerTests(APITestCase):
         # Tenant
         self.tenant = Tenant.objects.create(
             name='Serializer Test Tenant', slug='ser-test-tenant',
-            email='serializer@test.com', is_active=True,
+            email='serializer@test.com',
         )
 
         # Location
@@ -249,11 +249,11 @@ class ClientSavedPropertySerializerTests(APITestCase):
 
         # Client
         self.user = User.objects.create(
-            email='client_ser@test.com', is_active=True,
+            email='client_ser@test.com',
         )
         self.membership = TenantMembership.objects.create(
             user=self.user, tenant=self.tenant,
-            role=TenantMembership.Role.CLIENT, is_active=True,
+            role=TenantMembership.Role.CLIENT,
         )
         self.token = _token(self.user)
 
@@ -275,7 +275,7 @@ class ClientSavedPropertySerializerTests(APITestCase):
         PropertyImage.objects.create(
             property=self.prop,
             image_url='https://example.com/cover.jpg',
-            is_cover=True, is_active=True,
+            is_cover=True,
         )
 
         # SavedProperty
@@ -439,7 +439,7 @@ class ClientSavedPropertySerializerTests(APITestCase):
             tenant=self.tenant, title='Casa Sin Imagenes',
             listing_type='sale', status='disponible',
             property_type='house', price=Decimal('1000000'),
-            city=self.city, is_active=True,
+            city=self.city,
         )
         saved = SavedProperty.objects.create(
             tenant=self.tenant,
@@ -458,12 +458,12 @@ class ClientSavedPropertySerializerTests(APITestCase):
             tenant=self.tenant, title='Casa Segunda',
             listing_type='sale', status='disponible',
             property_type='apartment', price=Decimal('2000000'),
-            city=self.city, is_active=True,
+            city=self.city,
         )
         PropertyImage.objects.create(
             property=prop2,
             image_url='https://example.com/prop2.jpg',
-            is_cover=True, is_active=True,
+            is_cover=True,
         )
         saved2 = SavedProperty.objects.create(
             tenant=self.tenant,
@@ -491,7 +491,7 @@ class ClientSavedPropertySerializerTests(APITestCase):
             listing_type='sale', status='disponible',
             property_type='house', price=Decimal('500000'),
             bedrooms=0, bathrooms=0,
-            city=self.city, is_active=True,
+            city=self.city,
         )
         saved = SavedProperty.objects.create(
             tenant=self.tenant,
@@ -509,7 +509,7 @@ class ClientSavedPropertySerializerTests(APITestCase):
             tenant=self.tenant, title='Casa Cara',
             listing_type='sale', status='disponible',
             property_type='house', price=Decimal('999999999999.99'),
-            city=self.city, is_active=True,
+            city=self.city,
         )
         saved = SavedProperty.objects.create(
             tenant=self.tenant,

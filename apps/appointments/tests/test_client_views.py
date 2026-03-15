@@ -34,7 +34,7 @@ class AppointmentSetup(APITestCase):
         # Tenant
         self.tenant = Tenant.objects.create(
             name='Appointment Tenant', slug='appointment-tenant',
-            email='appointment@test.com', is_active=True,
+            email='appointment@test.com',
         )
 
         # Location setup
@@ -51,26 +51,26 @@ class AppointmentSetup(APITestCase):
         )
         self.client_membership = TenantMembership.objects.create(
             user=self.client_user, tenant=self.tenant,
-            role=TenantMembership.Role.CLIENT, is_active=True,
+            role=TenantMembership.Role.CLIENT,
         )
         self.token = _token(self.client_user)
 
         # Other client for isolation tests
         self.other_client_user = User.objects.create(
-            email='other_client_appointment@test.com', is_active=True,
+            email='other_client_appointment@test.com',
         )
         self.other_client_membership = TenantMembership.objects.create(
             user=self.other_client_user, tenant=self.tenant,
-            role=TenantMembership.Role.CLIENT, is_active=True,
+            role=TenantMembership.Role.CLIENT,
         )
 
         # Agent
         self.agent_user = User.objects.create(
-            email='agent_appointment@test.com', is_active=True,
+            email='agent_appointment@test.com',
         )
         self.agent_membership = TenantMembership.objects.create(
             user=self.agent_user, tenant=self.tenant,
-            role=TenantMembership.Role.AGENT, is_active=True,
+            role=TenantMembership.Role.AGENT,
         )
         AgentProfile.objects.create(membership=self.agent_membership)
 
@@ -79,11 +79,11 @@ class AppointmentSetup(APITestCase):
             tenant=self.tenant, title='Casa Appointment',
             listing_type='sale', status='disponible',
             property_type='house', price=1_000_000,
-            city=self.city, is_active=True,
+            city=self.city,
         )
         PropertyImage.objects.create(
             property=self.prop, image_url='http://example.com/image.jpg',
-            is_cover=True, is_active=True,
+            is_cover=True,
         )
 
 

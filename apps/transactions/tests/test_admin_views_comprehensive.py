@@ -44,69 +44,69 @@ class AdminTransactionsTestSetup(APITestCase):
         # Create tenant
         self.tenant = Tenant.objects.create(
             name='Transactions Test', slug='trans-test',
-            email='trans@test.com', is_active=True,
+            email='trans@test.com',
         )
 
         # Create admin
-        self.admin = User.objects.create(email='admin@trans.com', is_active=True)
+        self.admin = User.objects.create(email='admin@trans.com')
         self.admin_m = TenantMembership.objects.create(
             user=self.admin, tenant=self.tenant,
-            role=TenantMembership.Role.ADMIN, is_active=True,
+            role=TenantMembership.Role.ADMIN,
         )
         self.token = _token(self.admin)
 
         # Create agents
-        self.agent1 = User.objects.create(email='agent1@trans.com', is_active=True)
+        self.agent1 = User.objects.create(email='agent1@trans.com')
         self.agent1_m = TenantMembership.objects.create(
             user=self.agent1, tenant=self.tenant,
-            role=TenantMembership.Role.AGENT, is_active=True,
+            role=TenantMembership.Role.AGENT,
         )
         self.agent1_profile = AgentProfile.objects.create(membership=self.agent1_m)
 
-        self.agent2 = User.objects.create(email='agent2@trans.com', is_active=True)
+        self.agent2 = User.objects.create(email='agent2@trans.com')
         self.agent2_m = TenantMembership.objects.create(
             user=self.agent2, tenant=self.tenant,
-            role=TenantMembership.Role.AGENT, is_active=True,
+            role=TenantMembership.Role.AGENT,
         )
         self.agent2_profile = AgentProfile.objects.create(membership=self.agent2_m)
 
         # Create clients
-        self.client1 = User.objects.create(email='client1@trans.com', is_active=True)
+        self.client1 = User.objects.create(email='client1@trans.com')
         self.client1_m = TenantMembership.objects.create(
             user=self.client1, tenant=self.tenant,
-            role=TenantMembership.Role.CLIENT, is_active=True,
+            role=TenantMembership.Role.CLIENT,
         )
 
-        self.client2 = User.objects.create(email='client2@trans.com', is_active=True)
+        self.client2 = User.objects.create(email='client2@trans.com')
         self.client2_m = TenantMembership.objects.create(
             user=self.client2, tenant=self.tenant,
-            role=TenantMembership.Role.CLIENT, is_active=True,
+            role=TenantMembership.Role.CLIENT,
         )
 
         # Create properties
         self.prop1 = Property.objects.create(
             tenant=self.tenant, title='Property 1',
             listing_type='sale', status='disponible',
-            property_type='house', price=1_000_000, is_active=True,
+            property_type='house', price=1_000_000,
         )
 
         self.prop2 = Property.objects.create(
             tenant=self.tenant, title='Property 2',
             listing_type='sale', status='disponible',
-            property_type='apartment', price=500_000, is_active=True,
+            property_type='apartment', price=500_000,
         )
 
         self.prop3 = Property.objects.create(
             tenant=self.tenant, title='Property 3',
             listing_type='pending_listing', status='disponible',
-            property_type='land', price=200_000, is_active=True,
+            property_type='land', price=200_000,
         )
 
         # Create a non-admin user to test permissions
-        self.non_admin = User.objects.create(email='user@trans.com', is_active=True)
+        self.non_admin = User.objects.create(email='user@trans.com')
         self.non_admin_m = TenantMembership.objects.create(
             user=self.non_admin, tenant=self.tenant,
-            role=TenantMembership.Role.CLIENT, is_active=True,
+            role=TenantMembership.Role.CLIENT,
         )
         self.non_admin_token = _token(self.non_admin)
 
@@ -1189,33 +1189,33 @@ class TestTenantIsolation(AdminTransactionsTestSetup):
         # Create second tenant with its own data
         self.tenant2 = Tenant.objects.create(
             name='Transactions Test 2', slug='trans-test-2',
-            email='trans2@test.com', is_active=True,
+            email='trans2@test.com',
         )
 
-        admin2 = User.objects.create(email='admin2@trans.com', is_active=True)
+        admin2 = User.objects.create(email='admin2@trans.com')
         self.admin2_m = TenantMembership.objects.create(
             user=admin2, tenant=self.tenant2,
-            role=TenantMembership.Role.ADMIN, is_active=True,
+            role=TenantMembership.Role.ADMIN,
         )
         self.token2 = _token(admin2)
 
-        agent2 = User.objects.create(email='agent2b@trans.com', is_active=True)
+        agent2 = User.objects.create(email='agent2b@trans.com')
         self.agent2_t2 = TenantMembership.objects.create(
             user=agent2, tenant=self.tenant2,
-            role=TenantMembership.Role.AGENT, is_active=True,
+            role=TenantMembership.Role.AGENT,
         )
         AgentProfile.objects.create(membership=self.agent2_t2)
 
-        client2 = User.objects.create(email='client2b@trans.com', is_active=True)
+        client2 = User.objects.create(email='client2b@trans.com')
         self.client2_t2 = TenantMembership.objects.create(
             user=client2, tenant=self.tenant2,
-            role=TenantMembership.Role.CLIENT, is_active=True,
+            role=TenantMembership.Role.CLIENT,
         )
 
         prop2 = Property.objects.create(
             tenant=self.tenant2, title='Property T2',
             listing_type='sale', status='disponible',
-            property_type='house', price=1_000_000, is_active=True,
+            property_type='house', price=1_000_000,
         )
 
         # Create processes in both tenants

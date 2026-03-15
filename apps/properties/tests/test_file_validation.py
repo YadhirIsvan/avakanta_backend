@@ -144,18 +144,18 @@ class AdminFileUploadSetup(APITestCase):
     def setUp(self):
         self.tenant = Tenant.objects.create(
             name='FileVal Tenant', slug='fileval-tenant',
-            email='fileval@test.com', is_active=True,
+            email='fileval@test.com',
         )
-        admin_user = User.objects.create(email='admin_fv@test.com', is_active=True)
+        admin_user = User.objects.create(email='admin_fv@test.com')
         TenantMembership.objects.create(
             user=admin_user, tenant=self.tenant,
-            role=TenantMembership.Role.ADMIN, is_active=True,
+            role=TenantMembership.Role.ADMIN,
         )
         self.token = _token(admin_user)
         self.prop = Property.objects.create(
             tenant=self.tenant, title='Casa FileVal',
             listing_type='sale', status='disponible',
-            property_type='house', price=500_000, is_active=True,
+            property_type='house', price=500_000,
         )
 
 
@@ -273,26 +273,26 @@ class ClientPurchaseDocumentValidationSetup(APITestCase):
     def setUp(self):
         self.tenant = Tenant.objects.create(
             name='ClientFV Tenant', slug='clientfv-tenant',
-            email='clientfv@test.com', is_active=True,
+            email='clientfv@test.com',
         )
-        client_user = User.objects.create(email='client_fv@test.com', is_active=True)
+        client_user = User.objects.create(email='client_fv@test.com')
         self.client_m = TenantMembership.objects.create(
             user=client_user, tenant=self.tenant,
-            role=TenantMembership.Role.CLIENT, is_active=True,
+            role=TenantMembership.Role.CLIENT,
         )
         self.token = _token(client_user)
 
-        agent_user = User.objects.create(email='agent_fv@test.com', is_active=True)
+        agent_user = User.objects.create(email='agent_fv@test.com')
         agent_m = TenantMembership.objects.create(
             user=agent_user, tenant=self.tenant,
-            role=TenantMembership.Role.AGENT, is_active=True,
+            role=TenantMembership.Role.AGENT,
         )
         AgentProfile.objects.create(membership=agent_m)
 
         prop = Property.objects.create(
             tenant=self.tenant, title='Casa FV',
             listing_type='sale', status='disponible',
-            property_type='house', price=1_000_000, is_active=True,
+            property_type='house', price=1_000_000,
         )
         self.process = PurchaseProcess.objects.create(
             tenant=self.tenant, property=prop,

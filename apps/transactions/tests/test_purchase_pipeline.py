@@ -34,37 +34,37 @@ class PurchasePipelineSetup(APITestCase):
     def setUp(self):
         self.tenant = Tenant.objects.create(
             name='Pipeline Tenant', slug='pipeline-tenant',
-            email='pipeline@test.com', is_active=True,
+            email='pipeline@test.com',
         )
 
         # Admin
-        self.admin_user = User.objects.create(email='admin_pipe@test.com', is_active=True)
+        self.admin_user = User.objects.create(email='admin_pipe@test.com')
         self.admin_m = TenantMembership.objects.create(
             user=self.admin_user, tenant=self.tenant,
-            role=TenantMembership.Role.ADMIN, is_active=True,
+            role=TenantMembership.Role.ADMIN,
         )
         self.token = _token(self.admin_user)
 
         # Agent
-        agent_user = User.objects.create(email='agent_pipe@test.com', is_active=True)
+        agent_user = User.objects.create(email='agent_pipe@test.com')
         self.agent_m = TenantMembership.objects.create(
             user=agent_user, tenant=self.tenant,
-            role=TenantMembership.Role.AGENT, is_active=True,
+            role=TenantMembership.Role.AGENT,
         )
         AgentProfile.objects.create(membership=self.agent_m)
 
         # Client
-        client_user = User.objects.create(email='client_pipe@test.com', is_active=True)
+        client_user = User.objects.create(email='client_pipe@test.com')
         self.client_m = TenantMembership.objects.create(
             user=client_user, tenant=self.tenant,
-            role=TenantMembership.Role.CLIENT, is_active=True,
+            role=TenantMembership.Role.CLIENT,
         )
 
         # Property + PurchaseProcess (initial status: lead)
         self.prop = Property.objects.create(
             tenant=self.tenant, title='Casa Pipeline',
             listing_type='sale', status='disponible',
-            property_type='house', price=1_000_000, is_active=True,
+            property_type='house', price=1_000_000,
         )
         self.process = PurchaseProcess.objects.create(
             tenant=self.tenant,

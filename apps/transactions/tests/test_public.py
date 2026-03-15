@@ -13,7 +13,7 @@ class SellerLeadCreateTestCase(APITestCase):
         # The view hardcodes slug='altas-montanas'
         self.tenant = Tenant.objects.create(
             name='Altas Montañas', slug='altas-montanas',
-            email='info@altasmontanas.com', is_active=True,
+            email='info@altasmontanas.com',
         )
         self.valid_payload = {
             'full_name': 'María López',

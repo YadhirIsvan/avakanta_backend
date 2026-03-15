@@ -17,19 +17,19 @@ class PublicPropertyListTestCase(APITestCase):
     def setUp(self):
         self.tenant = Tenant.objects.create(
             name='Test Tenant', slug='test-tenant',
-            email='t@test.com', is_active=True,
+            email='t@test.com',
         )
         # Visible property (listing_type=sale, status=disponible)
         self.prop_visible = Property.objects.create(
             tenant=self.tenant, title='Casa visible',
             listing_type='sale', status='disponible',
-            property_type='house', price=1_500_000, is_active=True,
+            property_type='house', price=1_500_000,
         )
         # Not visible — pending listing
         self.prop_pending = Property.objects.create(
             tenant=self.tenant, title='Propiedad pendiente',
             listing_type='pending_listing', status='disponible',
-            property_type='apartment', price=800_000, is_active=True,
+            property_type='apartment', price=800_000,
         )
         # Not visible — inactive
         self.prop_inactive = Property.objects.create(
@@ -41,7 +41,7 @@ class PublicPropertyListTestCase(APITestCase):
         self.prop_apt = Property.objects.create(
             tenant=self.tenant, title='Departamento visible',
             listing_type='sale', status='disponible',
-            property_type='apartment', price=900_000, is_active=True,
+            property_type='apartment', price=900_000,
         )
 
     def test_list_returns_only_sale_disponible_active(self):
@@ -87,7 +87,7 @@ class PublicPropertyDetailTestCase(APITestCase):
     def setUp(self):
         self.tenant = Tenant.objects.create(
             name='Test Tenant', slug='test-tenant2',
-            email='t2@test.com', is_active=True,
+            email='t2@test.com',
         )
         self.prop = Property.objects.create(
             tenant=self.tenant, title='Casa detalle',
@@ -118,7 +118,7 @@ class PublicPropertyDetailTestCase(APITestCase):
         pending = Property.objects.create(
             tenant=self.tenant, title='Pendiente',
             listing_type='pending_listing', status='disponible',
-            property_type='house', price=500_000, is_active=True,
+            property_type='house', price=500_000,
         )
         resp = self.client.get(_detail(pending.pk))
         self.assertEqual(resp.status_code, 404)

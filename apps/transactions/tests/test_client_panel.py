@@ -46,34 +46,34 @@ class ClientDocumentUploadSetup(APITestCase):
     def setUp(self):
         self.tenant = Tenant.objects.create(
             name='Client Doc Tenant', slug='clientdoc-tenant',
-            email='clientdoc@test.com', is_active=True,
+            email='clientdoc@test.com',
         )
 
         # Cliente principal
         self.client_user = User.objects.create(
-            email='client_doc@test.com', is_active=True,
+            email='client_doc@test.com',
         )
         self.client_m = TenantMembership.objects.create(
             user=self.client_user, tenant=self.tenant,
-            role=TenantMembership.Role.CLIENT, is_active=True,
+            role=TenantMembership.Role.CLIENT,
         )
         self.token = _token(self.client_user)
 
         # Otro cliente (para test de aislamiento)
         other_user = User.objects.create(
-            email='other_client_doc@test.com', is_active=True,
+            email='other_client_doc@test.com',
         )
         self.other_client_m = TenantMembership.objects.create(
             user=other_user, tenant=self.tenant,
-            role=TenantMembership.Role.CLIENT, is_active=True,
+            role=TenantMembership.Role.CLIENT,
         )
         self.other_token = _token(other_user)
 
         # Agente
-        agent_user = User.objects.create(email='agent_doc@test.com', is_active=True)
+        agent_user = User.objects.create(email='agent_doc@test.com')
         self.agent_m = TenantMembership.objects.create(
             user=agent_user, tenant=self.tenant,
-            role=TenantMembership.Role.AGENT, is_active=True,
+            role=TenantMembership.Role.AGENT,
         )
         AgentProfile.objects.create(membership=self.agent_m)
 
@@ -81,7 +81,7 @@ class ClientDocumentUploadSetup(APITestCase):
         self.prop = Property.objects.create(
             tenant=self.tenant, title='Casa Doc',
             listing_type='sale', status='disponible',
-            property_type='house', price=1_000_000, is_active=True,
+            property_type='house', price=1_000_000,
         )
 
     def _make_process(self, status):

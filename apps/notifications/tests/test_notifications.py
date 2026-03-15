@@ -31,22 +31,22 @@ class NotificationTestSetup(APITestCase):
     def setUp(self):
         self.tenant = Tenant.objects.create(
             name='Notif Tenant', slug='notif-tenant',
-            email='notif@test.com', is_active=True,
+            email='notif@test.com',
         )
 
         # Usuario A
-        self.user_a = User.objects.create(email='notif_a@test.com', is_active=True)
+        self.user_a = User.objects.create(email='notif_a@test.com')
         self.membership_a = TenantMembership.objects.create(
             user=self.user_a, tenant=self.tenant,
-            role=TenantMembership.Role.CLIENT, is_active=True,
+            role=TenantMembership.Role.CLIENT,
         )
         self.token_a = _token(self.user_a)
 
         # Usuario B
-        self.user_b = User.objects.create(email='notif_b@test.com', is_active=True)
+        self.user_b = User.objects.create(email='notif_b@test.com')
         self.membership_b = TenantMembership.objects.create(
             user=self.user_b, tenant=self.tenant,
-            role=TenantMembership.Role.CLIENT, is_active=True,
+            role=TenantMembership.Role.CLIENT,
         )
         self.token_b = _token(self.user_b)
 

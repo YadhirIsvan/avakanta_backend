@@ -38,51 +38,51 @@ class AdminAppointmentsTestSetup(APITestCase):
         # Create tenant
         self.tenant = Tenant.objects.create(
             name='Appointments Test', slug='appt-test',
-            email='appt@test.com', is_active=True,
+            email='appt@test.com',
         )
 
         # Create admin
-        self.admin_user = User.objects.create(email='admin@appt.com', is_active=True)
+        self.admin_user = User.objects.create(email='admin@appt.com')
         self.admin_membership = TenantMembership.objects.create(
             user=self.admin_user, tenant=self.tenant,
-            role=TenantMembership.Role.ADMIN, is_active=True,
+            role=TenantMembership.Role.ADMIN,
         )
         self.admin_token = _token(self.admin_user)
 
         # Create agents
-        self.agent1_user = User.objects.create(email='agent1@appt.com', is_active=True, first_name='Carlos', last_name='Agent')
+        self.agent1_user = User.objects.create(email='agent1@appt.com', first_name='Carlos', last_name='Agent')
         self.agent1_membership = TenantMembership.objects.create(
             user=self.agent1_user, tenant=self.tenant,
-            role=TenantMembership.Role.AGENT, is_active=True,
+            role=TenantMembership.Role.AGENT,
         )
         self.agent1_profile = AgentProfile.objects.create(membership=self.agent1_membership)
 
-        self.agent2_user = User.objects.create(email='agent2@appt.com', is_active=True)
+        self.agent2_user = User.objects.create(email='agent2@appt.com')
         self.agent2_membership = TenantMembership.objects.create(
             user=self.agent2_user, tenant=self.tenant,
-            role=TenantMembership.Role.AGENT, is_active=True,
+            role=TenantMembership.Role.AGENT,
         )
         self.agent2_profile = AgentProfile.objects.create(membership=self.agent2_membership)
 
         # Create client
-        self.client_user = User.objects.create(email='client@appt.com', is_active=True)
+        self.client_user = User.objects.create(email='client@appt.com')
         self.client_membership = TenantMembership.objects.create(
             user=self.client_user, tenant=self.tenant,
-            role=TenantMembership.Role.CLIENT, is_active=True,
+            role=TenantMembership.Role.CLIENT,
         )
 
         # Create property
         self.prop = Property.objects.create(
             tenant=self.tenant, title='Test Property',
             listing_type='sale', status='disponible',
-            property_type='house', price=1_000_000, is_active=True,
+            property_type='house', price=1_000_000,
         )
 
         # Create non-admin user for permission tests
-        self.non_admin_user = User.objects.create(email='user@appt.com', is_active=True)
+        self.non_admin_user = User.objects.create(email='user@appt.com')
         self.non_admin_membership = TenantMembership.objects.create(
             user=self.non_admin_user, tenant=self.tenant,
-            role=TenantMembership.Role.CLIENT, is_active=True,
+            role=TenantMembership.Role.CLIENT,
         )
         self.non_admin_token = _token(self.non_admin_user)
 
