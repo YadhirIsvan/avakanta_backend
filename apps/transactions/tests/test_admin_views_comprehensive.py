@@ -20,6 +20,7 @@ from datetime import date, datetime, timedelta
 from decimal import Decimal
 
 from django.test import override_settings
+from django.utils import timezone
 from rest_framework.test import APITestCase
 from rest_framework_simplejwt.tokens import RefreshToken
 
@@ -1036,7 +1037,7 @@ class TestAdminHistory(AdminTransactionsTestSetup):
             status=PurchaseProcess.Status.CERRADO,
             sale_price=Decimal('1200000'),
             payment_method='Crédito hipotecario',
-            closed_at=datetime.now(),
+            closed_at=timezone.now(),
         )
         self.closed2 = PurchaseProcess.objects.create(
             tenant=self.tenant, property=self.prop2,
@@ -1045,7 +1046,7 @@ class TestAdminHistory(AdminTransactionsTestSetup):
             status=PurchaseProcess.Status.CERRADO,
             sale_price=Decimal('500000'),
             payment_method='Efectivo',
-            closed_at=datetime.now(),
+            closed_at=timezone.now(),
         )
 
     def test_list_closed_processes(self):
