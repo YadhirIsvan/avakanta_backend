@@ -61,6 +61,16 @@ def clear_verify_attempts(email):
     cache.delete(_get_verify_attempts_key(email))
 
 
+def cleanup_expired_otps() -> int:
+    """
+    Elimina OTPs expirados de la BD.
+    Retorna el número de registros eliminados.
+    """
+    from .models import OTPCode
+    deleted_count, _ = OTPCode.objects.filter(expires_at__lte=timezone.now()).delete()
+    return deleted_count
+
+
 def create_otp(email):
     """
     Genera un OTP, lo hashea, lo guarda en BD y retorna el código en claro
@@ -72,6 +82,9 @@ def create_otp(email):
 
     if is_rate_limited(email):
         raise ValueError('Límite de intentos alcanzado. Intenta de nuevo en una hora.')
+
+    # Cleanup proactivo de OTPs expirados antes de crear uno nuevo
+    cleanup_expired_otps()
 
     code = generate_otp()
     OTPCode.objects.create(
